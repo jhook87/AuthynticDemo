@@ -4,6 +4,11 @@ const assert = require('node:assert/strict');
 const { computeMultipleHashes, verifyHash } = require('../build/services/crypto/hashService.js');
 const { createBatchProof, verifyBatchProof } = require('../build/services/crypto/merkleService.js');
 const { bootstrapNetwork, simulateLatencyShift } = require('../build/services/network/networkSimulationService.js');
+const {
+  generateSigningBundle,
+  signMessage,
+  verifyMessageSignature,
+} = require('../build/services/crypto/signatureService.js');
 
 test('hash service supports multiple algorithms', async () => {
   const hashes = await computeMultipleHashes('authyntic', ['sha-256', 'sha-3', 'blake2b']);
@@ -29,4 +34,20 @@ test('network simulation adjusts latency', () => {
   shifted.forEach((node, index) => {
     assert.notEqual(node.latencyMs, nodes[index].latencyMs);
   });
+});
+
+test('signature service round trips ECDSA payloads', async () => {
+  const bundle = await generateSigningBundle();
+  const message = 'Authyntic QA verification payload';
+  const signature = await signMessage(bundle, message);
+  assert.equal(typeof signature, 'string');
+  assert.ok(signature.length > 60);
+
+  const verification = await verifyMessageSignature(bundle, message, signature);
+  assert.equal(verification.valid, true);
+
+  const swappedTail = signature.replace(/.$/, (char) => (char === 'A' ? 'B' : 'A'));
+  const tampered = await verifyMessageSignature(bundle, message, swappedTail);
+  assert.equal(tampered.valid, false);
+  assert.equal(tampered.reason, 'Signature check failed');
 });
