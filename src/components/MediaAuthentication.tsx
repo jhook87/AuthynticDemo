@@ -34,29 +34,22 @@ const MediaAuthentication: React.FC = () => {
     <div className="media-auth">
       <div className="card">
         <h2>Media Upload Simulation</h2>
-        <input type="file" accept="image/*,video/*,audio/*" onChange={handleFileChange} />
-        {fileName && (
-          <p>
-            Uploaded: <strong>{fileName}</strong>
-          </p>
-        )}
+        <label>
+          <span className="label-title">Choose Media</span>
+          <input type="file" accept="image/*,video/*,audio/*" onChange={handleFileChange} />
+        </label>
+        {fileName && <p>Uploaded Asset: <strong>{fileName}</strong></p>}
         {score !== null && (
-          <div style={{ marginTop: '0.5rem' }}>
-            <p>
-              Authenticity Score: <strong>{score.toFixed(2)}%</strong>
-            </p>
-            <div style={{ background: '#eee', borderRadius: '4px', height: '12px', overflow: 'hidden' }}>
-              <div
-                style={{
-                  width: `${score}%`,
-                  background: score > 80 ? '#4caf50' : score > 50 ? '#ffc107' : '#f44336',
-                  height: '100%',
-                }}
-              ></div>
+          <div className="info-panel">
+            <p>Authenticity Score</p>
+            <div className={score > 80 ? 'status-callout status-callout--success' : score > 50 ? 'status-callout' : 'status-callout status-callout--danger'}>
+              {score.toFixed(2)}%
             </div>
-            <p>
-              Hash: <code>{hash}</code>
-            </p>
+            <div className={score > 80 ? 'progress-bar progress-bar--green' : score > 50 ? 'progress-bar progress-bar--blue' : 'progress-bar progress-bar--alert'}>
+              <div className="progress-bar__fill" style={{ width: `${Math.min(score, 100)}%` }}></div>
+            </div>
+            <p>Computed Hash</p>
+            <div className="mono-block">{hash}</div>
           </div>
         )}
       </div>

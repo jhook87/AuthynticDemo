@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
-import { TrustNetwork, TrustNode, TrustConnection } from '../types/authyntic';
+import { TrustNetwork, TrustNode } from '../types/authyntic';
 import { getTrustNetwork } from '../services/mockTrustService';
 
 interface NetworkMapProps {
@@ -34,7 +34,7 @@ const NetworkMap: React.FC<NetworkMapProps> = ({ network: propNetwork, width = 6
     const svg = d3.select(svgRef.current);
     svg.selectAll('*').remove();
 
-    const color = (node: TrustNode) => (node.status === 'online' ? '#00c853' : '#d50000');
+    const color = (node: TrustNode) => (node.status === 'online' ? '#39FF14' : '#FF3333');
 
     const simulation = d3
       .forceSimulation(nodes)
@@ -51,8 +51,8 @@ const NetworkMap: React.FC<NetworkMapProps> = ({ network: propNetwork, width = 6
     // Draw links
     const link = svg
       .append('g')
-      .attr('stroke', '#999')
-      .attr('stroke-opacity', 0.6)
+      .attr('stroke', 'rgba(30, 144, 255, 0.45)')
+      .attr('stroke-opacity', 0.8)
       .selectAll('line')
       .data(links)
       .enter()
@@ -62,13 +62,14 @@ const NetworkMap: React.FC<NetworkMapProps> = ({ network: propNetwork, width = 6
     // Draw nodes
     const node = svg
       .append('g')
-      .attr('stroke', '#fff')
+      .attr('stroke', '#080b0f')
       .attr('stroke-width', 1.5)
       .selectAll('circle')
       .data(nodes)
       .enter()
       .append('circle')
-      .attr('r', 8)
+      .attr('class', (d: any) => `network-node network-node--${d.status}`)
+      .attr('r', 9)
       .attr('fill', (d: any) => color(d))
       .call(
         d3
@@ -102,6 +103,7 @@ const NetworkMap: React.FC<NetworkMapProps> = ({ network: propNetwork, width = 6
       .append('text')
       .text((d: any) => d.id)
       .attr('font-size', 10)
+      .attr('fill', '#9AA0AD')
       .attr('dx', 12)
       .attr('dy', 4);
 
@@ -123,10 +125,11 @@ const NetworkMap: React.FC<NetworkMapProps> = ({ network: propNetwork, width = 6
 
   return (
     <div className="network-map">
-      <svg ref={svgRef} width={width} height={height} style={{ border: '1px solid #ccc', borderRadius: '4px' }}></svg>
+      <svg ref={svgRef} className="network-map__canvas" width={width} height={height}></svg>
       {selectedNode && (
-        <div className="node-info" style={{ marginTop: '0.5rem' }}>
-          <strong>Selected Node:</strong> {selectedNode.id} ({selectedNode.type}) – status: {selectedNode.status}, trust score: {selectedNode.trust_score.toFixed(1)}
+        <div className="node-info">
+          <strong>Selected Node:</strong> {selectedNode.id} ({selectedNode.type}) – status: {selectedNode.status}, trust score:{' '}
+          {selectedNode.trust_score.toFixed(1)}
         </div>
       )}
     </div>

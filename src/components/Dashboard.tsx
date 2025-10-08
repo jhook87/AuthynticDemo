@@ -38,65 +38,51 @@ const Dashboard: React.FC = () => {
   return (
     <div className="dashboard">
       <div className="card">
-        <h2>Overview Metrics</h2>
-        <div className="metrics-grid" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-          <div className="metric-item" style={{ flex: '1 1 150px' }}>
-            <strong>{streams.length}</strong>
-            <div>Total Streams</div>
+        <h2>Operational Metrics</h2>
+        <div className="metrics-grid">
+          <div className="metric-item">
+            <span className="metric-value">{streams.length}</span>
+            <span className="metric-label">Total Streams</span>
           </div>
-          <div className="metric-item" style={{ flex: '1 1 150px' }}>
-            <strong>{activeStreams.length}</strong>
-            <div>Active Streams</div>
+          <div className="metric-item">
+            <span className="metric-value">{activeStreams.length}</span>
+            <span className="metric-label">Active Streams</span>
           </div>
-          <div className="metric-item" style={{ flex: '1 1 150px' }}>
-            <strong>{onlineNodes.length}</strong>
-            <div>Online Nodes</div>
+          <div className="metric-item">
+            <span className="metric-value">{onlineNodes.length}</span>
+            <span className="metric-label">Online Nodes</span>
           </div>
-          <div className="metric-item" style={{ flex: '1 1 150px' }}>
-            <strong>{offlineNodes.length}</strong>
-            <div>Offline Nodes</div>
+          <div className="metric-item">
+            <span className="metric-value">{offlineNodes.length}</span>
+            <span className="metric-label">Offline Nodes</span>
           </div>
-          <div className="metric-item" style={{ flex: '1 1 150px' }}>
-            <strong>{proofs.filter((p) => p.verified).length}</strong>
-            <div>Valid Proofs</div>
+          <div className="metric-item">
+            <span className="metric-value">{proofs.filter((p) => p.verified).length}</span>
+            <span className="metric-label">Valid Proofs</span>
           </div>
         </div>
       </div>
       <div className="card">
         <h2>Active Media Streams</h2>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <div className="table-container">
+          <table className="data-table">
             <thead>
               <tr>
-                <th style={{ textAlign: 'left', padding: '0.5rem' }}>ID</th>
-                <th style={{ textAlign: 'left', padding: '0.5rem' }}>Source</th>
-                <th style={{ textAlign: 'left', padding: '0.5rem' }}>Location</th>
-                <th style={{ textAlign: 'left', padding: '0.5rem' }}>Authenticity</th>
+                <th>ID</th>
+                <th>Source</th>
+                <th>Location</th>
+                <th>Authenticity</th>
               </tr>
             </thead>
             <tbody>
               {activeStreams.map((s) => (
-                <tr key={s.id} style={{ borderBottom: '1px solid rgba(0,0,0,0.1)' }}>
-                  <td style={{ padding: '0.5rem' }}>{s.id}</td>
-                  <td style={{ padding: '0.5rem' }}>{s.source}</td>
-                  <td style={{ padding: '0.5rem' }}>{s.location.name}</td>
-                  <td style={{ padding: '0.5rem' }}>
-                    <div
-                      style={{
-                        background: '#eee',
-                        borderRadius: '4px',
-                        height: '8px',
-                        overflow: 'hidden',
-                        width: '100%',
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: `${s.authenticity}%`,
-                          background: 'var(--color-accent)',
-                          height: '100%',
-                        }}
-                      ></div>
+                <tr key={s.id}>
+                  <td>{s.id}</td>
+                  <td>{s.source}</td>
+                  <td>{s.location.name}</td>
+                  <td>
+                    <div className="progress-bar progress-bar--green">
+                      <div className="progress-bar__fill" style={{ width: `${s.authenticity}%` }}></div>
                     </div>
                     <small>{s.authenticity.toFixed(1)}%</small>
                   </td>
@@ -114,9 +100,10 @@ const Dashboard: React.FC = () => {
       <div className="card">
         <h2>Example Merkle Root</h2>
         {sampleRoot ? (
-          <p>
-            Root calculated from first proof: <code>{sampleRoot}</code>
-          </p>
+          <>
+            <p>Root calculated from first proof:</p>
+            <div className="mono-block">{sampleRoot}</div>
+          </>
         ) : (
           <p>No proof available for demonstration.</p>
         )}
