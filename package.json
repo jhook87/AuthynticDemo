@@ -5,15 +5,16 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "npm run build:lib && vite build",
+    "build:lib": "tsc -p tsconfig.build.json && node scripts/prepare-build.cjs",
     "preview": "vite preview",
-    "deploy": "npm run build && netlify deploy --prod"
+    "test": "npm run build:lib && node --test --experimental-test-coverage tests/**/*.test.cjs"
   },
   "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "d3": "^7.8.5",
     "crypto-js": "^4.2.0",
+    "d3": "^7.8.5",
     "recharts": "^2.8.0"
   },
   "devDependencies": {
