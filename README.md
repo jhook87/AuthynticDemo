@@ -104,13 +104,6 @@ enable continuous deployment.
    comma‑separated strings, generate the corresponding Merkle tree,
    compute a proof for a selected leaf and verify its correctness.
 
-## Contributing
-
-This repository is intended as a demonstration and educational tool.
-Feel free to fork it or submit pull requests if you wish to extend the
-functionality, refine the user interface or integrate with a real
-back‑end. Contributions that improve accessibility, add tests or fix
-bugs are especially welcome.
 
 ## License
 
