@@ -1,112 +1,109 @@
-# Authyntic Platform Demo
+# Authyntic Operator Experience
 
-🎬 **[LIVE DEMO](https://authyntic-demo.netlify.app)**
+An immersive, single-page web application that demonstrates how an Authyntic platform operator observes, audits, and responds to the health of a decentralized media provenance network. The console highlights cryptographic verification, network consensus, media authenticity workflows, and operational readiness tooling in one cohesive experience.
 
-Welcome to the Authyntic platform demo! This project provides an interactive,
-browser‑based demonstration of the Authyntic media provenance and
-authenticity platform. It showcases how trust is established on a
-distributed network, how streaming media can be cryptographically
-verified in real‑time and how users can explore Merkle proofs under the
-hood.
+## Feature Highlights
 
-## What is Authyntic?
+- **Professional operator dashboard** – consolidated consensus metrics, real-time alerting, incident response history, and system health at a glance.
+- **Advanced media pipeline** – hash comparison across SHA-256, SHA-3, and BLAKE2b, Merkle batch verification, watermarking insights, blockchain anchoring simulation, and zero-knowledge proof summaries over the included image/audio/video assets.
+- **Network simulation suite** – dynamic topology visualized on a canvas map, latency and partition drills, consensus algorithm rotation (PBFT → PoS → HotStuff), and reputation adjustments with slashing events.
+- **Analytics & governance** – trust score projections, fraud pattern monitoring, performance benchmarking, webhook and integration management, disaster recovery posture, and upgrade scheduling.
+- **Progressive operator guidance** – in-product tutorial overlay, accessibility conscious layout, dark/light theming, and offline support via a service worker.
 
-Authyntic is a media provenance and authenticity platform designed to
-authenticate streaming and uploaded media at the edge and in the cloud.
-It combines cryptographic techniques like Merkle trees with
-peer‑to‑peer coordination and dynamic trust scoring to provide a robust
-chain of custody for audio, video and imagery. This demo uses
-lightweight mock services and hard‑coded data to illustrate the core
-concepts without requiring any back‑end infrastructure.
+## Getting Started
 
-## Demo Features
-
-- ✅ **Real‑time trust network visualization** – explore how edge devices
-  and coordinators connect and exchange trust signals via an interactive
-  force‑directed graph.
-- ✅ **Interactive Merkle proof validation** – inspect Merkle tree
-  structures, calculate custom trust scores and validate proofs step by
-  step.
-- ✅ **Streaming media authentication** – play audio and video while
-  generating cryptographic proofs and simulating tamper detection.
-- ✅ **Edge device network mapping** – click on nodes to reveal
-  metadata, status and trust scores.
-- ✅ **Tamper detection simulation** – toggle tampering on generated
-  hashes to see how verification fails.
-
-## Technology Stack
-
-This project uses a modern front‑end stack to deliver smooth
-visualizations and responsive interactions:
-
-- **React + TypeScript** – component‑based UI development with strong
-  typing.
-- **D3.js** – dynamic data visualizations for the network map and Merkle
-  tree displays.
-- **Vite** – fast development server and optimized build pipeline.
-- **Recharts** – (included for future use) charting library for data
-  metrics.
-- **Crypto‑JS** – hashing library used to simulate Merkle tree and
-  cryptographic proofs.
-
-## Installation & Development
-
-To run the demo locally you will need [Node.js](https://nodejs.org/) installed.
+The project targets Node.js 18+. Install dependencies once (the repo ships with a populated `node_modules` folder for the challenge environment):
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/AuthynticDemo.git
-cd AuthynticDemo
 npm install
+```
+
+Run the development server:
+
+```bash
 npm run dev
 ```
 
-This will start the Vite development server and open the demo in your
-browser at `http://localhost:3000`. For a production build, run
-`npm run build` which will output a `dist` directory containing static
-assets.
-
-## Deployment
-
-The demo is configured for deployment to Netlify. The included
-`deploy/netlify.toml` file defines the publish directory and catch‑all
-redirect so that client‑side routing works correctly. To deploy you can
-run:
+Build optimized assets and supporting ESM modules:
 
 ```bash
 npm run build
-netlify deploy --prod
 ```
 
-Alternatively you can connect the GitHub repository to Netlify and
-enable continuous deployment.
+Execute the unit tests (uses Node's built-in test runner with coverage reporting):
 
-## Demo Walkthrough
+```bash
+npm test
+```
 
-1. **Dashboard** – view real‑time metrics, including the number of
-   active streams, trust scores and valid proofs. A table lists
-   current media streams and their authenticity percentages. A small
-   network preview offers a quick glance at device connectivity.
-2. **Trust Visualization** – dive into the Merkle tree structures
-   behind proofs. Adjust reliability and risk factors with sliders to
-   observe how trust scores change. Validate sample proofs and see a
-   consensus indicator based on network trust scores.
-3. **Streaming Demo** – play sample audio and video. Generate a
-   cryptographic proof for a selected stream and simulate tampering to
-   witness how verification responds.
-4. **Network Map** – explore a fully interactive force‑directed graph
-   representing the trust network. Drag nodes around and click on them
-   to view details such as status and trust score.
-5. **Media Auth** – upload your own images, videos or audio files to
-   simulate authenticity scoring. A random hash and confidence score
-   based on the file contents are displayed along with a colored
-   progress bar.
-6. **Proof Generator** – experiment with arbitrary leaf values. Enter
-   comma‑separated strings, generate the corresponding Merkle tree,
-   compute a proof for a selected leaf and verify its correctness.
+### Available Scripts
 
+| Command | Description |
+| --- | --- |
+| `npm run dev` | Start Vite in development mode. |
+| `npm run build:lib` | Type-check and emit ESM modules to `build/` for testing. |
+| `npm run build` | Compile TypeScript and bundle production assets. |
+| `npm run preview` | Preview the production build locally. |
+| `npm test` | Build the library output and execute Node tests with coverage. |
+
+## Architecture Overview
+
+```
+src/
+├── components/
+│   ├── analytics/         // Trust projections, benchmarks, fraud patterns
+│   ├── dashboard/         // Primary operator dashboard widgets
+│   ├── media/             // Media authenticity pipeline visualizations
+│   ├── network/           // Canvas topology, consensus telemetry
+│   ├── settings/          // Operations, webhooks, recovery planning
+│   └── shared/            // Layout, router, cards, error boundary, tutorial
+├── constants/             // Palette, thresholds, enumerations
+├── hooks/                 // Real-time simulation orchestration
+├── services/
+│   ├── api/               // Incident + reporting synthesizers
+│   ├── crypto/            // Hashing, Merkle, ZKP, timestamp utilities
+│   ├── network/           // Topology mutation, consensus and reputation
+│   └── storage/           // Media asset processing & audit log builders
+├── store/                 // Lightweight Zustand-style store built on useSyncExternalStore
+├── styles/                // Global theming and responsive layout
+├── types/                 // Shared domain models & ambient typings
+├── utils/                 // Helpers (formatting, randomness, BLAKE2b)
+└── tests/                 // Node tests (built outputs in `build/`)
+```
+
+Key technical decisions:
+
+- **Custom router & store** – lightweight abstractions provide deterministic navigation/state while operating offline without external dependencies.
+- **Web Crypto + fallback algorithms** – signature verification uses ECDSA with browser/Node subtle crypto, hashing falls back to pure TypeScript implementations (including a hand-rolled BLAKE2b).
+- **Service worker & manifest** – enables offline exploration of the console and caches bundled media assets for PWA behavior.
+- **Canvas-driven network viz** – ensures performant animation without bringing in heavier WebGL frameworks while still exposing consensus/partition tooling.
+
+## Included Media Assets
+
+To keep the repository binary-free, sample media payloads are embedded as text constants inside `src/constants/mediaSamples.ts`:
+
+- Synthetic gradient PNG stored as a base64 data URI.
+- Half-second 440Hz WAV tone generated at build time and inlined as base64.
+- Simulated "video" feed represented as ASCII-art frames rendered by the UI.
+
+`MediaPipelineView` materializes these resources at runtime, computes multi-algorithm hashes, builds Merkle proofs, and simulates watermarking plus blockchain anchoring for each asset.
+
+## Testing Strategy
+
+Tests live under `tests/` and target the compiled ESM output in `build/`:
+
+- **Hash service** – ensures SHA-256, SHA-3, and BLAKE2b hashing agree with verification routines.
+- **Merkle service** – validates inclusion proofs and batch verification.
+- **Network simulation** – asserts latency simulations mutate topology metrics.
+
+Code coverage is reported via Node's experimental coverage tooling (`node --test --experimental-test-coverage`).
+
+## Deployment & PWA Notes
+
+- The build output (`dist/`) is suitable for static hosting (Netlify, Vercel, S3+CloudFront, etc.).
+- A service worker (`public/service-worker.js`) caches critical assets; update `CACHE_NAME` when deploying breaking changes.
+- `public/manifest.json` advertises installable metadata. Include a `192x192` icon (`public/icon-192.png`).
 
 ## License
 
-This project is provided for demonstration purposes only and is not
-licensed for production use. All sample media assets are generated
-programmatically and do not contain real personal data.
+The application is provided for demonstration purposes. Generated media assets are synthetic and free for reuse.
