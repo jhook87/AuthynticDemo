@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 // Import individual components
 import Dashboard from './components/Dashboard';
@@ -16,30 +16,58 @@ import ProofGenerator from './components/ProofGenerator';
  */
 const App: React.FC = () => {
   // Keep track of the active view
-  const [activeView, setActiveView] = useState<'dashboard' | 'trust' | 'streaming' | 'network' | 'authentication' | 'proof'>('dashboard');
+  const [activeView, setActiveView] =
+    useState<'dashboard' | 'trust' | 'streaming' | 'network' | 'authentication' | 'proof'>('dashboard');
   // Track theme mode
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(true);
+
+  useEffect(() => {
+    document.body.dataset.theme = darkMode ? 'dark' : 'light';
+  }, [darkMode]);
+
+  const navigation = [
+    { id: 'dashboard', label: 'Dashboard' },
+    { id: 'trust', label: 'Trust Visualization' },
+    { id: 'streaming', label: 'Streaming Demo' },
+    { id: 'network', label: 'Network Map' },
+    { id: 'authentication', label: 'Media Auth' },
+    { id: 'proof', label: 'Proof Generator' },
+  ] as const;
 
   return (
-    <div className={darkMode ? 'app dark' : 'app'}>
+    <div className="app">
       <header className="app-header">
-        <h1>Authyntic Platform Demo</h1>
-        <nav className="app-nav">
-          <button onClick={() => setActiveView('dashboard')} className={activeView === 'dashboard' ? 'active' : ''}>Dashboard</button>
-          <button onClick={() => setActiveView('trust')} className={activeView === 'trust' ? 'active' : ''}>Trust Visualization</button>
-          <button onClick={() => setActiveView('streaming')} className={activeView === 'streaming' ? 'active' : ''}>Streaming Demo</button>
-          <button onClick={() => setActiveView('network')} className={activeView === 'network' ? 'active' : ''}>Network Map</button>
-          <button onClick={() => setActiveView('authentication')} className={activeView === 'authentication' ? 'active' : ''}>Media Auth</button>
-          <button onClick={() => setActiveView('proof')} className={activeView === 'proof' ? 'active' : ''}>Proof Generator</button>
+        <div className="app-brand">
+          <span className="brand-mark" aria-hidden="true"></span>
+          <div>
+            <h1>Authyntic Deployment Console</h1>
+            <p className="app-tagline">Proof of truth at the speed of war.</p>
+          </div>
+        </div>
+        <nav className="app-nav" aria-label="Primary navigation">
+          {navigation.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className={activeView === item.id ? 'active' : ''}
+              aria-pressed={activeView === item.id}
+              onClick={() => setActiveView(item.id)}
+            >
+              {item.label}
+            </button>
+          ))}
         </nav>
         <div className="theme-toggle">
-          <label>
+          <label className="toggle-control">
             <input
               type="checkbox"
               checked={darkMode}
               onChange={() => setDarkMode(!darkMode)}
             />
-            {darkMode ? '🌙 Dark' : '☀️ Light'}
+            <span className="toggle-track">
+              <span className="toggle-thumb" />
+            </span>
+            <span className="toggle-text">{darkMode ? 'Tactical' : 'Daylight'} Mode</span>
           </label>
         </div>
       </header>

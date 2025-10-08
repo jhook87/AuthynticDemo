@@ -22,6 +22,12 @@ const TrustVisualization: React.FC = () => {
     return Math.round((reliabilityWeight * 100 + riskWeight * 100) / 2);
   }, [riskFactor, reliability]);
 
+  const customScoreClass = useMemo(() => {
+    if (customScore >= 75) return 'status-callout status-callout--success';
+    if (customScore >= 50) return 'status-callout';
+    return 'status-callout status-callout--danger';
+  }, [customScore]);
+
   // Derive consensus as average of trust scores in network
   const consensus = useMemo(() => {
     const avg = DUMMY_TRUST_NETWORK.nodes.reduce((acc, n) => acc + n.trust_score, 0) / DUMMY_TRUST_NETWORK.nodes.length;
@@ -47,9 +53,9 @@ const TrustVisualization: React.FC = () => {
       <div className="card">
         <h2>Merkle Tree Inspector</h2>
         {selectedProof ? (
-          <div style={{ fontFamily: 'monospace' }}>
+          <div className="mono-block trust-tree">
             {merkleTree.map((level, idx) => (
-              <div key={idx} style={{ marginBottom: '0.5rem' }}>
+              <div key={idx} className="trust-tree__level">
                 <strong>Level {idx}:</strong> {level.join(' | ')}
               </div>
             ))}
@@ -58,7 +64,7 @@ const TrustVisualization: React.FC = () => {
           <p>No proof selected.</p>
         )}
         <label>
-          Select Proof:
+          <span className="label-title">Select Proof</span>
           <select value={selectedProofIndex} onChange={(e) => setSelectedProofIndex(Number(e.target.value))}>
             {DUMMY_MERKLE_PROOFS.map((_, idx) => (
               <option value={idx} key={idx}>
@@ -71,7 +77,7 @@ const TrustVisualization: React.FC = () => {
       <div className="card">
         <h2>Trust Score Calculator</h2>
         <label>
-          Reliability ({Math.round(reliability * 100)}%):
+          <span className="label-title">Reliability ({Math.round(reliability * 100)}%)</span>
           <input
             type="range"
             min="0"
@@ -82,7 +88,7 @@ const TrustVisualization: React.FC = () => {
           />
         </label>
         <label>
-          Risk Factor ({Math.round(riskFactor * 100)}%):
+          <span className="label-title">Risk Factor ({Math.round(riskFactor * 100)}%)</span>
           <input
             type="range"
             min="0"
@@ -92,15 +98,20 @@ const TrustVisualization: React.FC = () => {
             onChange={(e) => setRiskFactor(parseFloat(e.target.value))}
           />
         </label>
-        <p>
-          Calculated Trust Score: <strong>{customScore}</strong>
-        </p>
+        <p>Calculated Trust Score</p>
+        <span className={customScoreClass}>{customScore}</span>
+        <div className="progress-bar progress-bar--green">
+          <div className="progress-bar__fill" style={{ width: `${customScore}%` }}></div>
+        </div>
       </div>
       <div className="card">
         <h2>Proof Validation Simulator</h2>
         {selectedProof ? (
           <p>
-            Computed root is {proofValid ? 'valid ✅' : 'invalid ❌'} for selected proof
+            Computed root status:{' '}
+            <span className={proofValid ? 'status-callout status-callout--success' : 'status-callout status-callout--danger'}>
+              {proofValid ? 'Valid' : 'Invalid'}
+            </span>
           </p>
         ) : (
           <p>Select a proof to verify.</p>
@@ -111,14 +122,13 @@ const TrustVisualization: React.FC = () => {
         <p>
           Average Trust Score across nodes: <strong>{consensus}</strong>
         </p>
-        <div style={{ background: '#eee', borderRadius: '4px', height: '12px', overflow: 'hidden' }}>
-          <div
-            style={{
-              width: `${consensus}%`,
-              background: 'var(--color-secondary)',
-              height: '100%',
-            }}
-          ></div>
+        <div className="status-group">
+          <span className={consensus >= 75 ? 'status-callout status-callout--success' : 'status-callout'}>
+            Consensus {consensus}%
+          </span>
+        </div>
+        <div className="progress-bar progress-bar--blue">
+          <div className="progress-bar__fill" style={{ width: `${consensus}%` }}></div>
         </div>
       </div>
     </div>

@@ -40,45 +40,49 @@ const ProofGenerator: React.FC = () => {
       <div className="card">
         <h2>Merkle Proof Generator</h2>
         <label>
-          Leaves (comma separated):
-          <input
-            type="text"
-            value={leavesInput}
-            onChange={(e) => setLeavesInput(e.target.value)}
-            style={{ width: '100%', marginTop: '0.25rem' }}
-          />
+          <span className="label-title">Leaves (comma separated)</span>
+          <input type="text" value={leavesInput} onChange={(e) => setLeavesInput(e.target.value)} />
         </label>
-        <label>
-          Leaf Index:
-          <input
-            type="number"
-            min="0"
-            max={leavesInput.split(',').length - 1}
-            value={selectedIndex}
-            onChange={(e) => setSelectedIndex(Number(e.target.value))}
-            style={{ width: '60px', marginLeft: '0.5rem' }}
-          />
-        </label>
-        <button onClick={generateTree} style={{ marginLeft: '0.5rem' }}>
-          Generate Proof
-        </button>
+        <div className="inline-controls">
+          <label>
+            <span className="label-title">Leaf Index</span>
+            <input
+              className="number-input"
+              type="number"
+              min="0"
+              max={Math.max(leavesInput.split(',').length - 1, 0)}
+              value={selectedIndex}
+              onChange={(e) => setSelectedIndex(Number(e.target.value))}
+            />
+          </label>
+          <button className="btn-secondary" onClick={generateTree}>
+            Generate Proof
+          </button>
+        </div>
         {tree.length > 0 && (
-          <div style={{ marginTop: '1rem' }}>
+          <div className="info-panel">
             <h3>Tree Levels</h3>
-            {tree.map((level, idx) => (
-              <div key={idx} style={{ fontFamily: 'monospace', marginBottom: '0.3rem' }}>
-                <strong>Level {idx}:</strong> {level.join(' | ')}
-              </div>
-            ))}
+            <div className="mono-block trust-tree">
+              {tree.map((level, idx) => (
+                <div key={idx} className="trust-tree__level">
+                  <strong>Level {idx}:</strong> {level.join(' | ')}
+                </div>
+              ))}
+            </div>
             <h3>Proof</h3>
-            <p style={{ fontFamily: 'monospace' }}>{proof.join(' , ')}</p>
-            <p>
-              Root: <code>{root}</code>
-            </p>
-            <button onClick={handleVerify}>Verify Proof</button>
-            {verified !== null && (
-              <p>Result: {verified ? 'Valid ✅' : 'Invalid ❌'}</p>
-            )}
+            <div className="mono-block">{proof.join(' | ')}</div>
+            <p>Merkle Root</p>
+            <div className="mono-block">{root}</div>
+            <div className="action-row">
+              <button className="btn-primary" onClick={handleVerify}>
+                Verify Proof
+              </button>
+              {verified !== null && (
+                <span className={verified ? 'status-callout status-callout--success' : 'status-callout status-callout--danger'}>
+                  {verified ? 'Valid' : 'Invalid'}
+                </span>
+              )}
+            </div>
           </div>
         )}
       </div>

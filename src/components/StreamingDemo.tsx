@@ -38,42 +38,49 @@ const StreamingDemo: React.FC = () => {
     <div className="streaming-demo">
       <div className="card">
         <h2>Select Stream</h2>
-        <select value={selectedId} onChange={(e) => setSelectedId(e.target.value)}>
-          {streams.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.id} - {s.source}
-            </option>
-          ))}
-        </select>
+        <label>
+          <span className="label-title">Active Stream</span>
+          <select value={selectedId} onChange={(e) => setSelectedId(e.target.value)}>
+            {streams.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.id} - {s.source}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
       <div className="card">
         <h2>Media Playback</h2>
         {/* Use the same dummy media files for all streams for simplicity */}
-        <video width="100%" height="200" controls src="/demo-media/sample-video.mp4"></video>
-        <audio controls src="/demo-media/sample-audio.wav" style={{ width: '100%', marginTop: '0.5rem' }}></audio>
+        <video height="200" controls src="/demo-media/sample-video.mp4"></video>
+        <audio controls src="/demo-media/sample-audio.wav"></audio>
       </div>
       <div className="card">
         <h2>Proof Generation</h2>
-        <button onClick={handleGenerateProof} style={{ marginRight: '0.5rem' }}>
-          Generate Proof
-        </button>
-        {proof && (
-          <>
-            <button onClick={() => setTampered(!tampered)}>
+        <div className="button-row">
+          <button className="btn-primary" onClick={handleGenerateProof}>
+            Generate Proof
+          </button>
+          {proof && (
+            <button className="btn-secondary" onClick={() => setTampered(!tampered)}>
               {tampered ? 'Revert Tamper' : 'Simulate Tamper'}
             </button>
-            <div style={{ marginTop: '0.5rem' }}>
-              <p>
-                Proof Hash: <code>{proof.mediaHash}</code>
-              </p>
-              <p>
-                Tampered: <strong>{tampered ? 'Yes' : 'No'}</strong>
-              </p>
-              <p>
-                Verification: {verification ? 'Success ✅' : 'Failed ❌'}
-              </p>
+          )}
+        </div>
+        {proof && (
+          <div className="info-panel">
+            <p>Proof Hash</p>
+            <div className="mono-block">{proof.mediaHash}</div>
+            <p>Status Overview</p>
+            <div className="status-group">
+              <span className={tampered ? 'status-callout status-callout--danger' : 'status-callout status-callout--success'}>
+                {tampered ? 'Tampered' : 'Authentic'}
+              </span>
+              <span className={verification ? 'status-callout status-callout--success' : 'status-callout status-callout--danger'}>
+                {verification ? 'Verification Passed' : 'Verification Failed'}
+              </span>
             </div>
-          </>
+          </div>
         )}
       </div>
     </div>
