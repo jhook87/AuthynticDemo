@@ -64,7 +64,9 @@ export const NetworkOperations = () => {
           <span>Finality {consensus.finalitySeconds.toFixed(1)}s</span>
         </div>
       </header>
-      <canvas ref={canvasRef} width={720} height={420} role="img" aria-label="Network topology visualization" />
+      <div className="network-visualization">
+        <canvas ref={canvasRef} width={720} height={420} role="img" aria-label="Network topology visualization" />
+      </div>
       <table className="network-table">
         <thead>
           <tr>
