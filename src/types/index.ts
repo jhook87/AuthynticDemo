@@ -217,6 +217,21 @@ export interface TutorialStep {
   id: string;
   title: string;
   description: string;
+  target?: string;
+  actionId?: string;
+  ctaLabel?: string;
+  helperText?: string;
+}
+
+export interface TutorialProgressState {
+  activeStep: number;
+  completedStepIds: string[];
+  visible: boolean;
+  wasDismissed: boolean;
+}
+
+export interface DemoStateSnapshot {
+  tutorial: TutorialProgressState;
 }
 
 export interface OperatorState {
@@ -240,7 +255,6 @@ export interface OperatorState {
   fraudPatterns: FraudPattern[];
   tutorial: {
     steps: TutorialStep[];
-    activeStep: number;
-    visible: boolean;
+    progress: TutorialProgressState;
   };
 }

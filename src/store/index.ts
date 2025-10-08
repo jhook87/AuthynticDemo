@@ -10,6 +10,7 @@ import type {
   PerformanceBenchmark,
   SystemHealthMetric,
   TrustMetric,
+  TutorialProgressState,
 } from '../types';
 import { createStore } from './createStore';
 import { bootstrapNetwork } from '../services/network/networkSimulationService';
@@ -21,6 +22,61 @@ import { minutesAgo, hoursFromNow } from '../utils/time';
 import { randomId } from '../utils/random';
 
 const initialNodes = bootstrapNetwork();
+
+const createInitialTutorialProgress = (): TutorialProgressState => ({
+  activeStep: 0,
+  completedStepIds: [],
+  visible: true,
+  wasDismissed: false,
+});
+
+const tutorialSteps = [
+  {
+    id: 'welcome',
+    title: 'Welcome to Authyntic Operator',
+    description: 'This guided tour highlights the most impressive parts of the demo console.',
+    target: '.app-nav',
+    helperText: 'Use the global navigation to jump between live demo workspaces.',
+  },
+  {
+    id: 'dashboard-overview',
+    title: 'Monitor the live consensus posture',
+    description: 'The dashboard summarizes consensus, trust and incident activity for quick situational awareness.',
+    target: '.dashboard-grid',
+  },
+  {
+    id: 'media-upload',
+    title: 'Upload media for verification',
+    description: 'Trigger the simulated authenticity pipeline to see hashing, watermarking and moderation in action.',
+    target: '.media-upload',
+    helperText: 'Press the Simulate upload button inside the media panel to watch the pipeline animate.',
+  },
+  {
+    id: 'hash-visualizer',
+    title: 'Animated cryptographic pipeline',
+    description: 'Watch our dramatized hashing workflow complete with staged progress updates for the demo.',
+    target: '.crypto-progress',
+  },
+  {
+    id: 'network-operations',
+    title: 'Consortium network awareness',
+    description: 'Follow consensus leaders, latencies and topology shifts from the animated network view.',
+    target: '.network-visualization',
+  },
+  {
+    id: 'analytics-intelligence',
+    title: 'Predictive analytics',
+    description: 'Dive into projections, benchmarks and fraud pattern discovery inside analytics.',
+    target: '.analytics-panel',
+  },
+  {
+    id: 'demo-complete',
+    title: 'You are ready to explore',
+    description: 'Experiment freely, toggle visual themes, and reopen the tour from the helper when you need a refresher.',
+    target: '.theme-switch',
+    ctaLabel: 'Finish tour',
+  },
+] as const;
 
 const initialState: OperatorState = {
   loading: true,
@@ -125,25 +181,8 @@ const initialState: OperatorState = {
     },
   ],
   tutorial: {
-    steps: [
-      {
-        id: 'overview',
-        title: 'Welcome to the operator console',
-        description: 'Review health, trust, and consensus at a glance.',
-      },
-      {
-        id: 'media',
-        title: 'Inspect media authenticity',
-        description: 'Dive deep into hashing, watermarking, and moderation signals.',
-      },
-      {
-        id: 'network',
-        title: 'Monitor network topology',
-        description: 'Simulate consensus, partitions, and recovery events.',
-      },
-    ],
-    activeStep: 0,
-    visible: true,
+    steps: [...tutorialSteps],
+    progress: createInitialTutorialProgress(),
   },
 };
 
@@ -195,11 +234,95 @@ export const updateBenchmarks = (benchmarks: PerformanceBenchmark[]) => {
 };
 
 export const completeTutorialStep = () => {
+  store.setState(({ tutorial }) => {
+    const { steps, progress } = tutorial;
+    const currentStep = steps[progress.activeStep];
+    const completed = new Set(progress.completedStepIds);
+    if (currentStep) {
+      completed.add(currentStep.id);
+    }
+    const isLastStep = progress.activeStep >= steps.length - 1;
+    const nextIndex = isLastStep ? progress.activeStep : progress.activeStep + 1;
+    return {
+      tutorial: {
+        steps,
+        progress: {
+          activeStep: nextIndex,
+          completedStepIds: Array.from(completed),
+          visible: !isLastStep,
+          wasDismissed: isLastStep ? true : progress.wasDismissed,
+        },
+      },
+    };
+  });
+};
+
+export const dismissTutorial = () => {
   store.setState(({ tutorial }) => ({
     tutorial: {
-      ...tutorial,
-      activeStep: Math.min(tutorial.steps.length - 1, tutorial.activeStep + 1),
-      visible: tutorial.activeStep + 1 < tutorial.steps.length,
+      steps: tutorial.steps,
+      progress: { ...tutorial.progress, visible: false, wasDismissed: true },
     },
   }));
+};
+
+export const openTutorial = () => {
+  store.setState(({ tutorial }) => ({
+    tutorial: {
+      steps: tutorial.steps,
+      progress: { ...tutorial.progress, visible: true, wasDismissed: false },
+    },
+  }));
+};
+
+export const goToTutorialStep = (stepId: string) => {
+  store.setState(({ tutorial }) => {
+    const index = tutorial.steps.findIndex((step) => step.id === stepId);
+    if (index === -1) {
+      return { tutorial };
+    }
+    return {
+      tutorial: {
+        steps: tutorial.steps,
+        progress: {
+          ...tutorial.progress,
+          activeStep: index,
+          visible: true,
+        },
+      },
+    };
+  });
+};
+
+export const resetTutorial = () => {
+  store.setState(() => ({
+    tutorial: {
+      steps: [...tutorialSteps],
+      progress: createInitialTutorialProgress(),
+    },
+  }));
+};
+
+export const restoreTutorialProgress = (progress: Partial<TutorialProgressState>) => {
+  store.setState(({ tutorial }) => {
+    const stepIds = new Set(tutorial.steps.map((step) => step.id));
+    const sanitizedCompleted = (progress.completedStepIds ?? tutorial.progress.completedStepIds).filter((id) =>
+      stepIds.has(id),
+    );
+    const activeStep = Math.max(
+      0,
+      Math.min(tutorial.steps.length - 1, progress.activeStep ?? tutorial.progress.activeStep),
+    );
+    return {
+      tutorial: {
+        steps: tutorial.steps,
+        progress: {
+          activeStep,
+          completedStepIds: sanitizedCompleted,
+          visible: progress.visible ?? tutorial.progress.visible,
+          wasDismissed: progress.wasDismissed ?? tutorial.progress.wasDismissed,
+        },
+      },
+    };
+  });
 };

@@ -9,7 +9,8 @@ import { MediaPipelineView } from './components/media/MediaPipelineView';
 import { AnalyticsCenter } from './components/analytics/AnalyticsCenter';
 import { ConfigurationCenter } from './components/settings/ConfigurationCenter';
 import { TutorialOverlay } from './components/shared/TutorialOverlay';
-import { useOperatorStore, initializeStore } from './store';
+import { useOperatorStore, initializeStore, restoreTutorialProgress } from './store';
+import { demoStateService } from './services/storage/demoStateService';
 import { useRealtimeSimulation } from './hooks/useRealtimeSimulation';
 
 const App = () => {
@@ -22,6 +23,10 @@ const App = () => {
 
   useEffect(() => {
     initializeStore({});
+    const savedProgress = demoStateService.loadDemoProgress();
+    if (savedProgress) {
+      restoreTutorialProgress(savedProgress);
+    }
   }, []);
 
   useRealtimeSimulation();

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useOperatorStore, upsertMediaAssets } from '../../store';
 import { createMediaAsset, applyWatermark, computeSimilarity, moderateAsset } from '../../services/storage/mediaStorageService';
 import { computeMultipleHashes } from '../../services/crypto/hashService';
@@ -10,6 +10,14 @@ import { HASH_ALGORITHMS } from '../../constants';
 import { formatHash, formatTimestamp } from '../../utils/formatters';
 import { SAMPLE_MEDIA, type SampleMediaDefinition } from '../../constants/mediaSamples';
 import { SimulatedVideoFeed } from './SimulatedVideoFeed';
+import { demoCryptoService } from '../../services/demo/demoCryptoService';
+
+interface HashAnimationState {
+  active: boolean;
+  percent: number;
+  message: string;
+  hash?: string;
+}
 
 export const MediaPipelineView = () => {
   const assets = useOperatorStore((state) => state.mediaAssets);
@@ -22,7 +30,24 @@ export const MediaPipelineView = () => {
   const [definitions, setDefinitions] = useState<Map<string, SampleMediaDefinition>>(
     () => new Map(),
   );
+  const [hashAnimation, setHashAnimation] = useState<HashAnimationState>({
+    active: false,
+    percent: 0,
+    message: 'Ready to simulate hash verification.',
+  });
   const algorithmList = useMemo(() => [...HASH_ALGORITHMS] as HashAlgorithm[], []);
+
+  const updateHashes = useCallback(
+    async (assetHash: string) => {
+      const digestList = await computeMultipleHashes(assetHash, algorithmList);
+      const digestMap = digestList.reduce(
+        (acc, value) => ({ ...acc, [value.algorithm]: value.digest }),
+        {} as Record<HashAlgorithm, string>,
+      );
+      setHashes(digestMap);
+    },
+    [algorithmList],
+  );
 
   useEffect(() => {
     const bootstrap = async () => {
@@ -52,33 +77,54 @@ export const MediaPipelineView = () => {
       setTimestampRecord(anchorContent(assetsOnly[0].id));
       setZkProof(generateProof());
       setModeration(moderateAsset(assetsOnly[0]));
-      const digestList = await computeMultipleHashes(assetsOnly[0].hash, algorithmList);
-      const digestMap = digestList.reduce(
-        (acc, value) => ({ ...acc, [value.algorithm]: value.digest }),
-        {} as Record<HashAlgorithm, string>,
-      );
-      setHashes(digestMap);
+      await updateHashes(assetsOnly[0].hash);
     };
     bootstrap();
-  }, [assets, algorithmList]);
+  }, [assets, updateHashes]);
 
   useEffect(() => {
     const current = assets.find((asset) => asset.id === selected);
     if (!current) return;
     const update = async () => {
-      const digestList = await computeMultipleHashes(current.hash, algorithmList);
-      const digestMap = digestList.reduce(
-        (acc, value) => ({ ...acc, [value.algorithm]: value.digest }),
-        {} as Record<HashAlgorithm, string>,
-      );
-      setHashes(digestMap);
+      await updateHashes(current.hash);
       setWatermark(applyWatermark(current));
       setTimestampRecord(anchorContent(current.id));
       setZkProof(generateProof());
       setModeration(moderateAsset(current));
     };
     update();
-  }, [selected, assets, algorithmList]);
+  }, [selected, assets, updateHashes]);
+
+  useEffect(() => {
+    setHashAnimation((state) => (state.active ? state : { active: false, percent: 0, message: 'Ready to simulate hash verification.' }));
+  }, [selected]);
+
+  const handleSimulatedUpload = async () => {
+    const current = assets.find((asset) => asset.id === selected);
+    if (!current) {
+      setHashAnimation({ active: false, percent: 0, message: 'Select a media asset to begin the simulation.' });
+      return;
+    }
+
+    setHashAnimation({ active: true, percent: 5, message: 'Initializing demo pipeline…' });
+
+    try {
+      const demoHash = await demoCryptoService.generateHashWithAnimation(current.hash, (percent, message) => {
+        setHashAnimation((previous) => ({
+          ...previous,
+          active: true,
+          percent,
+          message,
+        }));
+      });
+
+      await updateHashes(current.hash);
+      setHashAnimation({ active: false, percent: 100, message: 'Hash generated! Demo verification complete.', hash: demoHash });
+    } catch (error) {
+      console.error('Demo upload simulation failed', error);
+      setHashAnimation({ active: false, percent: 0, message: 'Simulation interrupted. Please try again.' });
+    }
+  };
 
   const selectedAsset = assets.find((asset) => asset.id === selected);
   const selectedDefinition = selectedAsset ? definitions.get(selectedAsset.id) : undefined;
@@ -99,6 +145,12 @@ export const MediaPipelineView = () => {
       <header>
         <h2>Media authenticity pipeline</h2>
         <p>Hashing, watermarking, and zero-knowledge attestations across sample assets.</p>
+        <div className="media-upload">
+          <button type="button" onClick={handleSimulatedUpload} disabled={hashAnimation.active}>
+            {hashAnimation.active ? 'Simulating…' : 'Simulate upload verification'}
+          </button>
+          <span>Launch a dramatized end-to-end verification sequence.</span>
+        </div>
       </header>
       <div className="media-layout">
         <aside>
@@ -148,6 +200,24 @@ export const MediaPipelineView = () => {
           )}
         </div>
         <div className="media-analytics">
+          <section className="crypto-progress" aria-live="polite">
+            <h3>Hash generation demo</h3>
+            <p>{hashAnimation.message}</p>
+            <div
+              className="crypto-progress-bar"
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.round(hashAnimation.percent)}
+            >
+              <span style={{ width: `${Math.min(100, Math.max(0, hashAnimation.percent))}%` }} />
+            </div>
+            {hashAnimation.hash && (
+              <p className="crypto-progress-hash">
+                Demo hash <code>{formatHash(hashAnimation.hash)}</code>
+              </p>
+            )}
+          </section>
           <section>
             <h3>Multi-algorithm hashing</h3>
             <ul>
