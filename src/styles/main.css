@@ -1,0 +1,118 @@
+/*
+ * Global styles for the Authyntic demo. The design aims for a modern and
+ * professional look with support for both light and dark themes. Colors and
+ * fonts are defined as CSS variables for easy customization. Animations
+ * provide smooth transitions between states.
+ */
+:root {
+  --color-bg: #f5f7fa;
+  --color-bg-dark: #121212;
+  --color-text: #222;
+  --color-text-dark: #f8f9fa;
+  --color-primary: #007acc;
+  --color-secondary: #006699;
+  --color-accent: #00bcd4;
+  --color-card: #ffffff;
+  --color-card-dark: #1e1e1e;
+}
+
+/* Reset default margins/paddings */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: Inter, sans-serif;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+.dark body,
+.dark {
+  background: var(--color-bg-dark);
+  color: var(--color-text-dark);
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 2rem;
+  background: var(--color-card);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.dark .app-header {
+  background: var(--color-card-dark);
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+.app-header h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.app-nav {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.app-nav button {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+  color: inherit;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.app-nav button:hover,
+.app-nav button.active {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.theme-toggle {
+  margin-left: 1rem;
+}
+
+.app-content {
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Card component style used within many panels */
+.card {
+  background: var(--color-card);
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+}
+
+.dark .card {
+  background: var(--color-card-dark);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.card h2 {
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+}
+
+/* Responsive layout */
+@media (max-width: 768px) {
+  .app-nav {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .app-content {
+    padding: 1rem;
+  }
+}
