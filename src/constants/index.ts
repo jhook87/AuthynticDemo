@@ -1,49 +1,40 @@
-import type {
-  ConsensusSnapshot,
-  HashAlgorithm,
-  NetworkIncident,
-  NetworkNode,
-} from '../types';
+export const NETWORK_REGIONS = ['us-east', 'us-west', 'eu-central', 'ap-south', 'ap-northeast'] as const;
 
-export const HASH_ALGORITHMS: ReadonlyArray<HashAlgorithm> = ['sha-256', 'sha-3', 'blake2b'];
-
-export const ROLE_COLORS: Record<NetworkNode['role'], string> = {
-  ingest: 'rgba(16, 185, 129, 0.85)',
-  validator: 'rgba(59, 130, 246, 0.85)',
-  curator: 'rgba(249, 115, 22, 0.85)',
-  edge: 'rgba(236, 72, 153, 0.85)',
-  storage: 'rgba(139, 92, 246, 0.85)',
+export const ROLE_COLORS: Record<string, string> = {
+  ingest: '#4f46e5',
+  validator: '#0ea5e9',
+  curator: '#14b8a6',
+  edge: '#f97316',
+  storage: '#facc15',
 };
 
-export const STATUS_BADGE_COLORS: Record<NetworkNode['status'], string> = {
-  online: 'rgba(34, 197, 94, 0.85)',
-  offline: 'rgba(248, 113, 113, 0.85)',
-  degraded: 'rgba(250, 204, 21, 0.85)',
+export const STATUS_BADGE_COLORS: Record<'online' | 'offline' | 'degraded', string> = {
+  online: '#10b981',
+  offline: '#f43f5e',
+  degraded: '#facc15',
 };
 
-export const NETWORK_REGIONS: ReadonlyArray<string> = [
-  'us-east',
-  'us-west',
-  'eu-central',
-  'ap-southeast',
-  'sa-east',
-];
-
-export const CONSENSUS_ALGORITHMS: ReadonlyArray<ConsensusSnapshot['algorithm']> = [
-  'PBFT',
-  'PoS',
-  'HotStuff',
-];
-
-export const INCIDENT_SEVERITIES: ReadonlyArray<NetworkIncident['severity']> = [
-  'low',
-  'medium',
-  'high',
-  'critical',
-];
+export const ALERT_LEVEL_COLORS: Record<'info' | 'warning' | 'critical', string> = {
+  info: '#38bdf8',
+  warning: '#facc15',
+  critical: '#f43f5e',
+};
 
 export const AUTHENTICITY_THRESHOLDS = {
-  trusted: 85,
-  review: 70,
-} as const;
+  trusted: 80,
+  review: 50,
+};
 
+export const HASH_ALGORITHMS = ['sha-256', 'sha-3', 'blake2b'] as const;
+
+export const CONSENSUS_ALGORITHMS = ['PBFT', 'PoS', 'HotStuff'] as const;
+
+export const INCIDENT_SEVERITIES = ['low', 'medium', 'high', 'critical'] as const;
+
+export const TRAINING_ATTACKS = ['Deepfake injection', 'Sybil takeover', 'Checkpoint rewrite'];
+
+export const POLICY_PRESETS = ['Strict provenance', 'Balanced throughput', 'Latency optimized'];
+
+export const WEBHOOK_EVENTS = ['asset.created', 'asset.updated', 'alert.triggered', 'consensus.finalized'];
+
+export const SERVICE_WORKER_CACHE = 'authyntic-offline-cache-v1';

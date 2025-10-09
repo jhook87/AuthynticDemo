@@ -1,30 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo } from 'react';
 import { useOperatorStore } from '../../store';
 import { formatPercentage } from '../../utils/formatters';
-import { demoInteractionService } from '../../services/demo/demoInteractionService';
-import type { OperatorState } from '../../types';
 
 export const AnalyticsCenter = () => {
-  const selectAnalyticsState = useCallback(
-    (state: OperatorState) => ({
-      trustMetrics: state.trustMetrics,
-      benchmarks: state.benchmarks,
-      fraudPatterns: state.fraudPatterns,
-    }),
-    [],
-  );
-  const { trustMetrics, benchmarks, fraudPatterns } = useOperatorStore(selectAnalyticsState);
-  const panelRef = useRef<HTMLElement | null>(null);
-  const [spotlight, setSpotlight] = useState(false);
-  const timeoutRef = useRef<number | null>(null);
-  const clearSpotlight = useCallback(() => {
-    if (timeoutRef.current !== null) {
-      if (typeof window !== 'undefined') {
-        window.clearTimeout(timeoutRef.current);
-      }
-      timeoutRef.current = null;
-    }
-  }, []);
+  const { trustMetrics, benchmarks, fraudPatterns } = useOperatorStore((state) => ({
+    trustMetrics: state.trustMetrics,
+    benchmarks: state.benchmarks,
+    fraudPatterns: state.fraudPatterns,
+  }));
 
   const projected = useMemo(
     () =>
@@ -36,34 +19,8 @@ export const AnalyticsCenter = () => {
     [trustMetrics],
   );
 
-  useEffect(
-    () =>
-      demoInteractionService.on('analytics.scrollToIntelligence', () => {
-        panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        setSpotlight(true);
-        clearSpotlight();
-        if (typeof window !== 'undefined') {
-          timeoutRef.current = window.setTimeout(() => {
-            setSpotlight(false);
-            clearSpotlight();
-          }, 2000);
-        }
-      }),
-    [clearSpotlight],
-  );
-
-  useEffect(
-    () => () => {
-      clearSpotlight();
-    },
-    [clearSpotlight],
-  );
-
   return (
-    <section
-      ref={panelRef}
-      className={`panel analytics-panel${spotlight ? ' analytics-panel--spotlight' : ''}`}
-    >
+    <section className="panel analytics-panel">
       <header>
         <h2>Advanced analytics</h2>
         <p>Trend forecasting and anomaly detection across the Authyntic network.</p>

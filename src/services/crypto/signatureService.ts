@@ -40,41 +40,18 @@ const bufferToBase64 = (buffer: ArrayBuffer): string => {
 
 const base64ToUint8Array = (value: string): Uint8Array => {
   const sanitized = value.replace(/[^A-Za-z0-9+/=]/g, '');
-  if (sanitized.length % 4 !== 0) {
-    throw new Error('Invalid base64 string length');
-  }
-
-  const decodeChar = (char: string | undefined): number => {
-    if (typeof char === 'undefined') {
-      throw new Error('Invalid base64 string length');
-    }
-    if (char === '=') return 0;
-    const index = base64Alphabet.indexOf(char);
-    if (index === -1) {
-      throw new Error(`Invalid base64 character: ${char}`);
-    }
-    return index;
-  };
-
   const output: number[] = [];
   for (let i = 0; i < sanitized.length; i += 4) {
-    const char1 = sanitized[i];
-    const char2 = sanitized[i + 1];
-    const char3 = sanitized[i + 2];
-    const char4 = sanitized[i + 3];
-
-    const enc1 = decodeChar(char1);
-    const enc2 = decodeChar(char2);
-    const enc3 = decodeChar(char3);
-    const enc4 = decodeChar(char4);
-
-    const chunk = (enc1 << 18) | (enc2 << 12) | (enc3 << 6) | enc4;
+    const enc1 = base64Alphabet.indexOf(sanitized[i]);
+    const enc2 = base64Alphabet.indexOf(sanitized[i + 1]);
+    const enc3 = base64Alphabet.indexOf(sanitized[i + 2]);
+    const enc4 = base64Alphabet.indexOf(sanitized[i + 3]);
+    const chunk = (enc1 << 18) | (enc2 << 12) | ((enc3 & 63) << 6) | (enc4 & 63);
     output.push((chunk >> 16) & 0xff);
-
-    if (char3 !== '=') {
+    if (sanitized[i + 2] !== '=') {
       output.push((chunk >> 8) & 0xff);
     }
-    if (char4 !== '=') {
+    if (sanitized[i + 3] !== '=') {
       output.push(chunk & 0xff);
     }
   }
