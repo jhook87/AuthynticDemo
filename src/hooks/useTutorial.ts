@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   completeTutorialStep,
   dismissTutorial,
@@ -7,7 +7,7 @@ import {
   resetTutorial,
   useOperatorStore,
 } from '../store';
-import type { TutorialStep } from '../types';
+import type { OperatorState, TutorialStep } from '../types';
 import { demoStateService } from '../services/storage/demoStateService';
 
 interface TutorialOverlayPosition {
@@ -26,7 +26,8 @@ const calculateOverlayPosition = (element: HTMLElement): TutorialOverlayPosition
 };
 
 export const useTutorial = () => {
-  const tutorial = useOperatorStore((state) => state.tutorial);
+  const selectTutorial = useCallback((state: OperatorState) => state.tutorial, []);
+  const tutorial = useOperatorStore(selectTutorial);
   const { steps, progress } = tutorial;
   const [position, setPosition] = useState<TutorialOverlayPosition | null>(null);
   const highlightedElementRef = useRef<HTMLElement | null>(null);

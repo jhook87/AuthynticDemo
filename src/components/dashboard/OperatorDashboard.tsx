@@ -1,7 +1,8 @@
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { MetricCard } from '../shared/MetricCard';
 import { StatusBadge } from '../shared/StatusBadge';
 import { useOperatorStore } from '../../store';
+import type { OperatorState } from '../../types';
 import { formatLatency, formatPercentage, formatScore, formatTimestamp } from '../../utils/formatters';
 
 interface ActivityItem {
@@ -20,13 +21,22 @@ const ACTIVITY_LEVEL_CLASS: Record<ActivityItem['level'], string> = {
 };
 
 export const OperatorDashboard: React.FC = () => {
-  const { consensus, trustMetrics, networkNodes, alerts, incidents } = useOperatorStore((state) => ({
-    consensus: state.consensus,
-    trustMetrics: state.trustMetrics,
-    networkNodes: state.networkNodes.slice(0, 5),
-    alerts: state.alerts.slice(0, 4),
-    incidents: state.incidents.slice(0, 4),
-  }));
+  const selectDashboardState = useCallback(
+    (state: OperatorState) => ({
+      consensus: state.consensus,
+      trustMetrics: state.trustMetrics,
+      networkNodes: state.networkNodes,
+      alerts: state.alerts,
+      incidents: state.incidents,
+    }),
+    [],
+  );
+
+  const { consensus, trustMetrics, networkNodes, alerts, incidents } = useOperatorStore(selectDashboardState);
+
+  const featuredNodes = useMemo(() => networkNodes.slice(0, 5), [networkNodes]);
+  const recentAlerts = useMemo(() => alerts.slice(0, 4), [alerts]);
+  const recentIncidents = useMemo(() => incidents.slice(0, 4), [incidents]);
 
   const executiveMetrics = useMemo(
     () => [
@@ -63,7 +73,7 @@ export const OperatorDashboard: React.FC = () => {
   );
 
   const activityFeed = useMemo<ActivityItem[]>(() => {
-    const alertActivities = alerts.map<ActivityItem>((alert) => ({
+    const alertActivities = recentAlerts.map<ActivityItem>((alert) => ({
       id: alert.id,
       title: alert.title,
       description: alert.message,
@@ -71,7 +81,7 @@ export const OperatorDashboard: React.FC = () => {
       level: alert.level === 'critical' ? 'error' : alert.level === 'warning' ? 'warning' : 'info',
     }));
 
-    const incidentActivities = incidents.map<ActivityItem>((incident) => ({
+    const incidentActivities = recentIncidents.map<ActivityItem>((incident) => ({
       id: incident.id,
       title: incident.description,
       description: incident.remediation,
@@ -82,7 +92,7 @@ export const OperatorDashboard: React.FC = () => {
     return [...alertActivities, ...incidentActivities]
       .slice(0, 6)
       .sort((a, b) => (a.timestamp > b.timestamp ? -1 : 1));
-  }, [alerts, incidents]);
+  }, [recentAlerts, recentIncidents]);
 
   return (
     <div className="container">
@@ -138,9 +148,13 @@ export const OperatorDashboard: React.FC = () => {
                 <span className="status-badge status-online">{metric.label}</span>
                 <div className="activity-meta">
                   <strong>{formatScore(metric.score)}</strong>
-                  <span className="text-muted">Trend {formatScore(metric.trend.at(-1)?.value ?? metric.score)}</span>
+                  <span className="text-muted">
+                    Trend {formatScore((metric.trend.length > 0 ? metric.trend[metric.trend.length - 1]?.value : undefined) ?? metric.score)}
+                  </span>
                 </div>
-                <span className="text-muted">Projection {formatScore(metric.projection.at(0)?.value ?? metric.score)}</span>
+                <span className="text-muted">
+                  Projection {formatScore((metric.projection.length > 0 ? metric.projection[0]?.value : undefined) ?? metric.score)}
+                </span>
               </div>
             ))}
           </div>
@@ -151,7 +165,7 @@ export const OperatorDashboard: React.FC = () => {
         <h2 className="text-heading-2">Active Network</h2>
         <p className="text-muted">Operational health across gateway, oracle, and validation nodes.</p>
         <div className="activity-list" style={{ marginTop: '1.5rem' }}>
-          {networkNodes.map((node) => (
+          {featuredNodes.map((node) => (
             <div className="activity-item" key={node.id}>
               <StatusBadge status={node.status} />
               <div className="activity-meta">

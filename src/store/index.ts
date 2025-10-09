@@ -1,4 +1,4 @@
-import { useMemo, useSyncExternalStore } from 'react';
+import { useMemo, useRef, useSyncExternalStore } from 'react';
 import type {
   AlertEvent,
   AuditLogEntry,
@@ -197,9 +197,24 @@ export const operatorStore = store;
 
 const getSnapshot = () => store.getState();
 
-export const useOperatorStore = <T>(selector: (state: OperatorState) => T): T => {
+const defaultEquality = <T,>(a: T, b: T) => Object.is(a, b);
+
+export const useOperatorStore = <T>(
+  selector: (state: OperatorState) => T,
+  equalityFn: (a: T, b: T) => boolean = defaultEquality,
+): T => {
   const state = useSyncExternalStore(store.subscribe, getSnapshot, getSnapshot);
-  return useMemo(() => selector(state), [state, selector]);
+  const selectedRef = useRef<T>();
+  const hasSelection = useRef(false);
+
+  const selected = useMemo(() => selector(state), [state, selector]);
+
+  if (!hasSelection.current || !equalityFn(selectedRef.current as T, selected)) {
+    selectedRef.current = selected;
+    hasSelection.current = true;
+  }
+
+  return selectedRef.current as T;
 };
 
 export const initializeStore = (state: Partial<OperatorState>) => {

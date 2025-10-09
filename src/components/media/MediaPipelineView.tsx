@@ -5,7 +5,7 @@ import { computeMultipleHashes } from '../../services/crypto/hashService';
 import { createBatchProof, deriveRoot } from '../../services/crypto/merkleService';
 import { generateProof } from '../../services/crypto/zkpService';
 import { anchorContent } from '../../services/crypto/timestampService';
-import type { HashAlgorithm, MerkleLeaf } from '../../types';
+import type { HashAlgorithm, MediaAsset, MerkleLeaf, OperatorState } from '../../types';
 import { HASH_ALGORITHMS } from '../../constants';
 import { formatHash, formatTimestamp } from '../../utils/formatters';
 import { SAMPLE_MEDIA, type SampleMediaDefinition } from '../../constants/mediaSamples';
@@ -57,7 +57,8 @@ const buildDemoMerkleLevels = (leaves: MerkleLeaf[]) => {
 };
 
 export const MediaPipelineView = () => {
-  const assets = useOperatorStore((state) => state.mediaAssets);
+  const selectAssets = useCallback((state: OperatorState) => state.mediaAssets, []);
+  const assets = useOperatorStore(selectAssets);
   const [selected, setSelected] = useState<string | undefined>(assets[0]?.id);
   const [hashes, setHashes] = useState<Record<HashAlgorithm, string>>({} as Record<HashAlgorithm, string>);
   const [watermark, setWatermark] = useState(() => (assets[0] ? applyWatermark(assets[0]) : undefined));
@@ -72,7 +73,7 @@ export const MediaPipelineView = () => {
     percent: 0,
     message: 'Ready to simulate hash verification.',
   });
-  const progressRef = useRef<HTMLElement | null>(null);
+  const progressRef = useRef<HTMLDivElement | null>(null);
   const spotlightTimeout = useRef<number | null>(null);
   const [hashSpotlight, setHashSpotlight] = useState(false);
   const clearSpotlightTimeout = useCallback(() => {
@@ -101,7 +102,7 @@ export const MediaPipelineView = () => {
     const bootstrap = async () => {
       if (assets.length) return;
       const created = await Promise.all(
-        SAMPLE_MEDIA.map(async (entry) => {
+        SAMPLE_MEDIA.map(async (entry: SampleMediaDefinition): Promise<{ asset: MediaAsset; definition: SampleMediaDefinition }> => {
           try {
             const buffer = await entry.getData();
             const asset = await createMediaAsset(entry.fileName, entry.type, buffer);
@@ -119,7 +120,8 @@ export const MediaPipelineView = () => {
       }
       const comparable = assetsOnly.map((asset) => ({ ...asset }));
       upsertMediaAssets(assetsOnly.map((asset) => computeSimilarity(asset, comparable)));
-      setDefinitions(new Map(created.map((item) => [item.asset.id, item.definition])));
+      const definitionEntries = created.map((item) => [item.asset.id, item.definition] as const);
+      setDefinitions(new Map(definitionEntries));
       setSelected(assetsOnly[0]?.id);
       setWatermark(applyWatermark(assetsOnly[0]));
       setTimestampRecord(anchorContent(assetsOnly[0].id));

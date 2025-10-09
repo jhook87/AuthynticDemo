@@ -2,13 +2,18 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useOperatorStore } from '../../store';
 import { formatPercentage } from '../../utils/formatters';
 import { demoInteractionService } from '../../services/demo/demoInteractionService';
+import type { OperatorState } from '../../types';
 
 export const AnalyticsCenter = () => {
-  const { trustMetrics, benchmarks, fraudPatterns } = useOperatorStore((state) => ({
-    trustMetrics: state.trustMetrics,
-    benchmarks: state.benchmarks,
-    fraudPatterns: state.fraudPatterns,
-  }));
+  const selectAnalyticsState = useCallback(
+    (state: OperatorState) => ({
+      trustMetrics: state.trustMetrics,
+      benchmarks: state.benchmarks,
+      fraudPatterns: state.fraudPatterns,
+    }),
+    [],
+  );
+  const { trustMetrics, benchmarks, fraudPatterns } = useOperatorStore(selectAnalyticsState);
   const panelRef = useRef<HTMLElement | null>(null);
   const [spotlight, setSpotlight] = useState(false);
   const timeoutRef = useRef<number | null>(null);
