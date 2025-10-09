@@ -6,8 +6,9 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 5173",
     "build": "tsc && vite build",
+    "build:lib": "tsc -p tsconfig.build.json && node scripts/prepare-build.cjs",
     "preview": "vite preview --host 0.0.0.0 --port 4173",
-    "test": "node tests/crypto.test.cjs",
+    "test": "npm run build:lib && node tests/crypto.test.cjs",
     "clean": "rm -rf node_modules package-lock.json && npm install"
   },
   "dependencies": {
