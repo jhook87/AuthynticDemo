@@ -4,8 +4,6 @@ import { useOperatorStore } from '../../store';
 
 interface LayoutProps {
   children: ReactNode;
-  darkMode: boolean;
-  onToggleTheme: () => void;
 }
 
 const navItems = [
@@ -16,12 +14,15 @@ const navItems = [
   { label: 'Operations', path: '/settings' },
 ];
 
-export const Layout = ({ children, darkMode, onToggleTheme }: LayoutProps) => {
+export const Layout = ({ children }: LayoutProps) => {
   const alerts = useOperatorStore((state) => state.alerts);
   return (
     <div className="app-shell">
       <aside className="app-nav">
-        <h1>Authyntic Operator</h1>
+        <div className="app-nav__brand">
+          <h1>Authyntic Operator</h1>
+          <p>Command center for authenticity intelligence</p>
+        </div>
         <nav>
           {navItems.map((item) => (
             <NavLink key={item.path} to={item.path} className="nav-link">
@@ -33,9 +34,6 @@ export const Layout = ({ children, darkMode, onToggleTheme }: LayoutProps) => {
           <strong>Active alerts</strong>
           <span>{alerts.filter((alert) => !alert.acknowledged).length}</span>
         </div>
-        <button type="button" className="theme-switch" onClick={onToggleTheme}>
-          {darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-        </button>
       </aside>
       <main>{children}</main>
     </div>

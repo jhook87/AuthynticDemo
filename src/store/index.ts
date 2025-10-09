@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type {
   AlertEvent,
   AuditLogEntry,
@@ -20,6 +20,7 @@ import { buildTrustMetrics, buildPerformanceBenchmarks } from '../services/api/r
 import { buildAuditTrail } from '../services/storage/auditLogService';
 import { minutesAgo, hoursFromNow } from '../utils/time';
 import { randomId } from '../utils/random';
+import { demoInteractionService } from '../services/demo/demoInteractionService';
 
 const initialNodes = bootstrapNetwork();
 
@@ -50,30 +51,34 @@ const tutorialSteps = [
     description: 'Trigger the simulated authenticity pipeline to see hashing, watermarking and moderation in action.',
     target: '.media-upload',
     helperText: 'Press the Simulate upload button inside the media panel to watch the pipeline animate.',
+    demoAction: () => demoInteractionService.trigger('media.simulateUpload'),
   },
   {
     id: 'hash-visualizer',
     title: 'Animated cryptographic pipeline',
     description: 'Watch our dramatized hashing workflow complete with staged progress updates for the demo.',
     target: '.crypto-progress',
+    demoAction: () => demoInteractionService.trigger('media.focusHashPanel'),
   },
   {
     id: 'network-operations',
     title: 'Consortium network awareness',
     description: 'Follow consensus leaders, latencies and topology shifts from the animated network view.',
     target: '.network-visualization',
+    demoAction: () => demoInteractionService.trigger('network.highlightConsensus'),
   },
   {
     id: 'analytics-intelligence',
     title: 'Predictive analytics',
     description: 'Dive into projections, benchmarks and fraud pattern discovery inside analytics.',
     target: '.analytics-panel',
+    demoAction: () => demoInteractionService.trigger('analytics.scrollToIntelligence'),
   },
   {
     id: 'demo-complete',
     title: 'You are ready to explore',
-    description: 'Experiment freely, toggle visual themes, and reopen the tour from the helper when you need a refresher.',
-    target: '.theme-switch',
+    description: 'Experiment freely across the workspaces and reopen the tour helper whenever you need a refresher.',
+    target: '.app-nav__brand',
     ctaLabel: 'Finish tour',
   },
 ] as const;
@@ -190,8 +195,82 @@ const store = createStore(initialState);
 
 export const operatorStore = store;
 
-export const useOperatorStore = <T>(selector: (state: OperatorState) => T): T =>
-  useSyncExternalStore(store.subscribe, () => selector(store.getState()));
+const shallowEqual = (a: unknown, b: unknown): boolean => {
+  if (Object.is(a, b)) {
+    return true;
+  }
+  if (typeof a !== 'object' || a === null || typeof b !== 'object' || b === null) {
+    return false;
+  }
+  if (Array.isArray(a) || Array.isArray(b)) {
+    if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) {
+      return false;
+    }
+    for (let index = 0; index < a.length; index += 1) {
+      if (!Object.is(a[index], b[index])) {
+        return false;
+      }
+    }
+    return true;
+  }
+  const keysA = Object.keys(a as Record<string, unknown>);
+  const keysB = Object.keys(b as Record<string, unknown>);
+  if (keysA.length !== keysB.length) {
+    return false;
+  }
+  for (const key of keysA) {
+    if (!Object.prototype.hasOwnProperty.call(b, key)) {
+      return false;
+    }
+    if (!Object.is((a as Record<string, unknown>)[key], (b as Record<string, unknown>)[key])) {
+      return false;
+    }
+  }
+  return true;
+};
+
+const defaultEquality = <Value,>(a: Value, b: Value) => shallowEqual(a, b);
+
+export const useOperatorStore = <T>(
+  selector: (state: OperatorState) => T,
+  equalityFn: (a: T, b: T) => boolean = defaultEquality,
+): T => {
+  const selectorRef = useRef(selector);
+  selectorRef.current = selector;
+  const equalityRef = useRef(equalityFn);
+  equalityRef.current = equalityFn;
+
+  const [selection, setSelection] = useState<T>(() => selector(store.getState()));
+  const selectionRef = useRef(selection);
+  selectionRef.current = selection;
+
+  useEffect(() => {
+    const unsubscribe = store.subscribe((nextState) => {
+      const nextSelection = selectorRef.current(nextState);
+      setSelection((previous) => {
+        if (equalityRef.current(previous, nextSelection)) {
+          return previous;
+        }
+        selectionRef.current = nextSelection;
+        return nextSelection;
+      });
+    });
+    return unsubscribe;
+  }, []);
+
+  useEffect(() => {
+    const nextSelection = selector(store.getState());
+    setSelection((previous) => {
+      if (equalityFn(previous, nextSelection)) {
+        return previous;
+      }
+      selectionRef.current = nextSelection;
+      return nextSelection;
+    });
+  }, [selector, equalityFn]);
+
+  return selection;
+};
 
 export const initializeStore = (state: Partial<OperatorState>) => {
   store.setState({ ...state, loading: false, initializedAt: Date.now() } as Partial<OperatorState>);

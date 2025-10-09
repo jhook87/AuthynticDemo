@@ -103,6 +103,19 @@ export const useTutorial = () => {
     return Math.min(100, Math.round((completedUnique.size / steps.length) * 100));
   }, [progress.completedStepIds, progress.visible, step, steps.length]);
 
+  const activeStepId = step?.id;
+  const stepDemoAction = step?.demoAction;
+
+  useEffect(() => {
+    if (!progress.visible || !stepDemoAction) {
+      return undefined;
+    }
+    const timer = window.setTimeout(() => {
+      stepDemoAction();
+    }, 600);
+    return () => window.clearTimeout(timer);
+  }, [progress.visible, activeStepId, stepDemoAction]);
+
   return {
     step,
     steps,

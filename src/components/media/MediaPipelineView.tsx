@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useOperatorStore, upsertMediaAssets } from '../../store';
 import { createMediaAsset, applyWatermark, computeSimilarity, moderateAsset } from '../../services/storage/mediaStorageService';
 import { computeMultipleHashes } from '../../services/crypto/hashService';
@@ -11,6 +11,7 @@ import { formatHash, formatTimestamp } from '../../utils/formatters';
 import { SAMPLE_MEDIA, type SampleMediaDefinition } from '../../constants/mediaSamples';
 import { SimulatedVideoFeed } from './SimulatedVideoFeed';
 import { demoCryptoService } from '../../services/demo/demoCryptoService';
+import { demoInteractionService } from '../../services/demo/demoInteractionService';
 
 interface HashAnimationState {
   active: boolean;
@@ -18,6 +19,40 @@ interface HashAnimationState {
   message: string;
   hash?: string;
 }
+
+const pseudoHash = (left: string, right: string) => {
+  let hash = 0;
+  const combined = `${left}${right}`;
+  for (let index = 0; index < combined.length; index += 1) {
+    hash = (hash << 5) - hash + combined.charCodeAt(index);
+    hash |= 0;
+  }
+  const sanitized = Math.abs(hash).toString(16).padStart(8, '0');
+  return `0x${sanitized}${combined.length.toString(16).padStart(4, '0')}`;
+};
+
+const buildDemoMerkleLevels = (leaves: MerkleLeaf[]) => {
+  if (!leaves.length) {
+    return [] as string[][];
+  }
+
+  const levels: string[][] = [];
+  let current = leaves.map((leaf) => leaf.hash);
+  levels.push(current);
+
+  while (current.length > 1) {
+    const next: string[] = [];
+    for (let index = 0; index < current.length; index += 2) {
+      const left = current[index];
+      const right = current[index + 1] ?? current[index];
+      next.push(pseudoHash(left, right));
+    }
+    current = next;
+    levels.push(current);
+  }
+
+  return levels;
+};
 
 export const MediaPipelineView = () => {
   const assets = useOperatorStore((state) => state.mediaAssets);
@@ -35,6 +70,17 @@ export const MediaPipelineView = () => {
     percent: 0,
     message: 'Ready to simulate hash verification.',
   });
+  const progressRef = useRef<HTMLElement | null>(null);
+  const spotlightTimeout = useRef<number | null>(null);
+  const [hashSpotlight, setHashSpotlight] = useState(false);
+  const clearSpotlightTimeout = useCallback(() => {
+    if (spotlightTimeout.current !== null) {
+      if (typeof window !== 'undefined') {
+        window.clearTimeout(spotlightTimeout.current);
+      }
+      spotlightTimeout.current = null;
+    }
+  }, []);
   const algorithmList = useMemo(() => [...HASH_ALGORITHMS] as HashAlgorithm[], []);
 
   const updateHashes = useCallback(
@@ -96,17 +142,30 @@ export const MediaPipelineView = () => {
   }, [selected, assets, updateHashes]);
 
   useEffect(() => {
-    setHashAnimation((state) => (state.active ? state : { active: false, percent: 0, message: 'Ready to simulate hash verification.' }));
-  }, [selected]);
+    setHashAnimation((state) =>
+      state.active
+        ? state
+        : { active: false, percent: 0, message: 'Ready to simulate hash verification.', hash: undefined },
+    );
+    setHashSpotlight(false);
+    clearSpotlightTimeout();
+  }, [clearSpotlightTimeout, selected]);
 
-  const handleSimulatedUpload = async () => {
+  useEffect(() => () => {
+    clearSpotlightTimeout();
+  }, [clearSpotlightTimeout]);
+
+  const handleSimulatedUpload = useCallback(async () => {
     const current = assets.find((asset) => asset.id === selected);
     if (!current) {
       setHashAnimation({ active: false, percent: 0, message: 'Select a media asset to begin the simulation.' });
       return;
     }
 
-    setHashAnimation({ active: true, percent: 5, message: 'Initializing demo pipeline…' });
+    progressRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setHashSpotlight(true);
+    clearSpotlightTimeout();
+    setHashAnimation({ active: true, percent: 5, message: 'Initializing demo pipeline…', hash: undefined });
 
     try {
       const demoHash = await demoCryptoService.generateHashWithAnimation(current.hash, (percent, message) => {
@@ -119,12 +178,49 @@ export const MediaPipelineView = () => {
       });
 
       await updateHashes(current.hash);
-      setHashAnimation({ active: false, percent: 100, message: 'Hash generated! Demo verification complete.', hash: demoHash });
+      setHashAnimation({
+        active: false,
+        percent: 100,
+        message: 'Hash generated! Demo verification complete.',
+        hash: demoHash,
+      });
+      if (typeof window !== 'undefined') {
+        spotlightTimeout.current = window.setTimeout(() => {
+          setHashSpotlight(false);
+          clearSpotlightTimeout();
+        }, 1600);
+      }
     } catch (error) {
       console.error('Demo upload simulation failed', error);
       setHashAnimation({ active: false, percent: 0, message: 'Simulation interrupted. Please try again.' });
+      if (typeof window !== 'undefined') {
+        spotlightTimeout.current = window.setTimeout(() => {
+          setHashSpotlight(false);
+          clearSpotlightTimeout();
+        }, 1200);
+      }
     }
-  };
+  }, [assets, clearSpotlightTimeout, selected, updateHashes]);
+
+  useEffect(() => demoInteractionService.on('media.simulateUpload', () => {
+    void handleSimulatedUpload();
+  }), [handleSimulatedUpload]);
+
+  useEffect(
+    () =>
+      demoInteractionService.on('media.focusHashPanel', () => {
+        progressRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setHashSpotlight(true);
+        clearSpotlightTimeout();
+        if (typeof window !== 'undefined') {
+          spotlightTimeout.current = window.setTimeout(() => {
+            setHashSpotlight(false);
+            clearSpotlightTimeout();
+          }, 1800);
+        }
+      }),
+    [clearSpotlightTimeout],
+  );
 
   const selectedAsset = assets.find((asset) => asset.id === selected);
   const selectedDefinition = selectedAsset ? definitions.get(selectedAsset.id) : undefined;
@@ -139,6 +235,7 @@ export const MediaPipelineView = () => {
   );
 
   const merkleRoot = useMemo(() => (leaves.length ? deriveRoot(leaves) : null), [leaves]);
+  const merkleLevels = useMemo(() => buildDemoMerkleLevels(leaves), [leaves]);
 
   return (
     <section className="panel media-panel">
@@ -146,7 +243,12 @@ export const MediaPipelineView = () => {
         <h2>Media authenticity pipeline</h2>
         <p>Hashing, watermarking, and zero-knowledge attestations across sample assets.</p>
         <div className="media-upload">
-          <button type="button" onClick={handleSimulatedUpload} disabled={hashAnimation.active}>
+          <button
+            type="button"
+            className="button button--primary"
+            onClick={handleSimulatedUpload}
+            disabled={hashAnimation.active}
+          >
             {hashAnimation.active ? 'Simulating…' : 'Simulate upload verification'}
           </button>
           <span>Launch a dramatized end-to-end verification sequence.</span>
@@ -157,7 +259,13 @@ export const MediaPipelineView = () => {
           <ul>
             {assets.map((asset) => (
               <li key={asset.id}>
-                <button type="button" onClick={() => setSelected(asset.id)} className={asset.id === selected ? 'active' : ''}>
+                <button
+                  type="button"
+                  onClick={() => setSelected(asset.id)}
+                  className={`button button--ghost media-asset-toggle${
+                    asset.id === selected ? ' media-asset-toggle--active' : ''
+                  }`}
+                >
                   <strong>{asset.title}</strong>
                   <span>{asset.type}</span>
                 </button>
@@ -200,9 +308,22 @@ export const MediaPipelineView = () => {
           )}
         </div>
         <div className="media-analytics">
-          <section className="crypto-progress" aria-live="polite">
+          <section
+            className={`crypto-progress demo-transition${hashAnimation.active ? ' hash-generation-animation' : ''}${
+              hashSpotlight ? ' crypto-progress--spotlight' : ''
+            }`}
+            aria-live="polite"
+            ref={progressRef}
+          >
             <h3>Hash generation demo</h3>
-            <p>{hashAnimation.message}</p>
+            <p
+              className={`crypto-progress-message${
+                hashAnimation.hash ? ' crypto-progress-message--success' : ''
+              }${hashAnimation.percent === 0 && !hashAnimation.active ? ' crypto-progress-message--idle' : ''}`}
+              role="status"
+            >
+              {hashAnimation.message}
+            </p>
             <div
               className="crypto-progress-bar"
               role="progressbar"
@@ -210,10 +331,10 @@ export const MediaPipelineView = () => {
               aria-valuemax={100}
               aria-valuenow={Math.round(hashAnimation.percent)}
             >
-              <span style={{ width: `${Math.min(100, Math.max(0, hashAnimation.percent))}%` }} />
+              <span style={{ width: `${Math.min(100, Math.max(0, hashAnimation.percent))}%` }} aria-hidden="true" />
             </div>
             {hashAnimation.hash && (
-              <p className="crypto-progress-hash">
+              <p className="crypto-progress-hash" aria-live="assertive">
                 Demo hash <code>{formatHash(hashAnimation.hash)}</code>
               </p>
             )}
@@ -229,6 +350,34 @@ export const MediaPipelineView = () => {
               ))}
             </ul>
           </section>
+          {merkleLevels.length > 0 && (
+            <section>
+              <h3>Merkle tree reconstruction</h3>
+              <div className="merkle-tree-visualizer" role="list">
+                {merkleLevels.map((level, levelIndex) => (
+                  <div
+                    className="merkle-level"
+                    key={`merkle-level-${levelIndex}`}
+                    role="listitem"
+                    aria-label={`Level ${levelIndex + 1}`}
+                  >
+                    {level.map((hash, nodeIndex) => (
+                      <span className="merkle-node demo-transition" key={`merkle-node-${levelIndex}-${nodeIndex}`}>
+                        <small>
+                          {levelIndex === 0
+                            ? 'Leaf'
+                            : levelIndex === merkleLevels.length - 1
+                              ? 'Root'
+                              : `Layer ${levelIndex}`}
+                        </small>
+                        <code>{formatHash(hash)}</code>
+                      </span>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
           {watermark && (
             <section>
               <h3>Watermark</h3>
