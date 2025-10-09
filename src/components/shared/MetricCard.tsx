@@ -32,7 +32,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
   sparkline,
   isActive = false,
 }) => {
-  const gaugeProgress = clampProgress(progress);
+  const gaugeProgress = clampProgress(progress ?? 0);
   const sparklineId = useId();
 
   const sparklinePath = useMemo(() => {

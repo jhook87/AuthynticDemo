@@ -181,10 +181,13 @@ button {
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-1) var(--space-2);
-  border: 1px solid transparent;
+  border: 1px solid rgba(0, 255, 255, 0.08);
   position: relative;
   transition: all var(--transition-default);
   border-radius: 3px;
+  background: rgba(9, 13, 20, 0.55);
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px rgba(0, 255, 255, 0.04);
 }
 
 .command-nav__link .command-nav__marker {
@@ -199,7 +202,8 @@ button {
 
 .command-nav__link:hover,
 .command-nav__link:focus-visible,
-.command-nav__link[aria-current='page'] {
+.command-nav__link[aria-current='page'],
+.command-nav__link.nav-active {
   border: 1px solid rgba(0, 255, 255, 0.45);
   background: rgba(0, 255, 255, 0.06);
   box-shadow: 0 10px 25px -12px rgba(0, 255, 255, 0.4);
@@ -207,7 +211,8 @@ button {
 
 .command-nav__link:hover .command-nav__marker,
 .command-nav__link:focus-visible .command-nav__marker,
-.command-nav__link[aria-current='page'] .command-nav__marker {
+.command-nav__link[aria-current='page'] .command-nav__marker,
+.command-nav__link.nav-active .command-nav__marker {
   transform: scale(1.4);
 }
 
