@@ -1,35 +1,31 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// Vite configuration for the Authyntic demo.
 export default defineConfig({
   plugins: [react()],
+  server: {
+    port: 5173, // Use Vite's default port
+    host: '0.0.0.0', // Important for GitHub Codespaces
+    cors: true,
+    // Add specific CORS headers for GitHub Codespaces
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+    }
+  },
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    assetsDir: 'assets',
+    // Ensure assets are properly handled in GitHub Codespaces
     rollupOptions: {
       output: {
-        manualChunks: {
-          'demo-core': ['react', 'react-dom'],
-          'demo-crypto': [
-            'crypto-js',
-            './src/services/demo/demoCryptoService.ts',
-            './src/services/crypto/hashService.ts',
-          ],
-          'demo-visualizations': ['d3', 'recharts'],
-          'demo-ui': [
-            './src/components/shared/Layout.tsx',
-            './src/components/shared/TutorialOverlay.tsx',
-          ],
-        },
+        manualChunks: undefined,
       },
     },
   },
-  optimizeDeps: {
-    include: ['react', 'react-dom', 'recharts', 'd3'],
-  },
-  server: {
-    port: 3000,
-    open: true,
-  },
+  // Add base URL handling for GitHub Codespaces
+  base: process.env.CODESPACE_NAME 
+    ? `https://${process.env.CODESPACE_NAME}-5173.${process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}/`
+    : '/',
 });
