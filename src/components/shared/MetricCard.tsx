@@ -8,7 +8,7 @@ interface MetricCardProps {
   trend: string;
   status: MetricStatus;
   icon: string;
-  progress: number;
+  progress?: number;
   sparkline?: number[];
   isActive?: boolean;
 }
