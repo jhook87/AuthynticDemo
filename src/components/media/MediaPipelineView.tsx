@@ -202,9 +202,12 @@ export const MediaPipelineView = () => {
     }
   }, [assets, clearSpotlightTimeout, selected, updateHashes]);
 
-  useEffect(() => demoInteractionService.on('media.simulateUpload', () => {
-    void handleSimulatedUpload();
-  }), [handleSimulatedUpload]);
+  useEffect(() => {
+    const unsubscribe = demoInteractionService.on('media.simulateUpload', () => {
+      void handleSimulatedUpload();
+    });
+    return unsubscribe;
+  }, [handleSimulatedUpload]);
 
   useEffect(
     () =>
