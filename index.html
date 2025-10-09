@@ -3,10 +3,35 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title>Authyntic Demo - Media Provenance Platform</title>
+
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+
+    <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json" />
-    <title>Authyntic Operator Console</title>
+
+    <!-- Conditional service worker registration for GitHub Codespaces -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        // Only register service worker in production or local development
+        const isGitHubCodespaces =
+          location.hostname.includes('github.dev') ||
+          location.hostname.includes('app.github.dev');
+
+        if (!isGitHubCodespaces) {
+          window.addEventListener('load', () => {
+            navigator.serviceWorker
+              .register('/service-worker.js')
+              .then((registration) => {
+                console.log('SW registered: ', registration);
+              })
+              .catch((registrationError) => {
+                console.log('SW registration failed: ', registrationError);
+              });
+          });
+        }
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
