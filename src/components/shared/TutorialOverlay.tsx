@@ -11,18 +11,32 @@ export const TutorialOverlay = () => {
   const totalSteps = steps.length;
   const currentStepNumber = progress.activeStep + 1;
   const ctaLabel = step?.ctaLabel ?? (currentStepNumber >= totalSteps ? 'Finish tour' : 'Next step');
+  const isFirstRunPopover =
+    isVisible && progress.activeStep === 0 && progress.completedStepIds.length === 0 && !progress.wasDismissed;
+
+  const containerClassName = [
+    'tutorial-overlay-container',
+    position ? 'tutorial-overlay-container--anchored' : 'tutorial-overlay-container--floating',
+    isFirstRunPopover ? 'tutorial-overlay-container--intro' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  const cardClassName = ['tutorial-overlay-card', 'demo-transition', isFirstRunPopover ? 'tutorial-overlay-card--intro' : '']
+    .filter(Boolean)
+    .join(' ');
 
   return (
     <>
       {isVisible && step && (
         <div
-          className="tutorial-overlay-container"
+          className={containerClassName}
           style={overlayStyle}
           role="dialog"
           aria-live="polite"
           aria-label={`Tutorial step ${currentStepNumber} of ${totalSteps}`}
         >
-          <div className="tutorial-overlay-card demo-transition">
+          <div className={cardClassName} data-intro={isFirstRunPopover || undefined}>
             <header>
               <span className="tutorial-step-count">
                 Step {currentStepNumber} / {totalSteps}
