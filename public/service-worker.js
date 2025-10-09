@@ -1,30 +1,39 @@
-const CACHE_NAME = 'authyntic-cache-v2';
-const ASSETS = ['/', '/index.html', '/manifest.json'];
-
 self.addEventListener('install', (event) => {
+  console.log('Service worker installing...');
+  // Skip waiting and activate immediately in development
+  if (location.hostname.includes('github.dev') || location.hostname.includes('app.github.dev')) {
+    self.skipWaiting();
+    return;
+  }
+  
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)).then(() => self.skipWaiting()),
+    caches.open('authyntic-demo-v1').then((cache) => {
+      return cache.addAll([
+        '/',
+        '/index.html'
+        // Removed asset caching for GitHub Codespaces compatibility
+      ]);
+    })
   );
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys.map((key) => {
-          if (key !== CACHE_NAME) {
-            return caches.delete(key);
-          }
-          return undefined;
-        }),
-      ),
-    ),
-  );
-  self.clients.claim();
+  console.log('Service worker activating...');
+  event.waitUntil(self.clients.claim());
 });
 
 self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetch(event.request)),
-  );
+  // Skip caching in GitHub Codespaces environment
+  if (location.hostname.includes('github.dev') || location.hostname.includes('app.github.dev')) {
+    return;
+  }
+  
+  // Only handle same-origin requests
+  if (event.request.url.startsWith(self.location.origin)) {
+    event.respondWith(
+      caches.match(event.request).then((response) => {
+        return response || fetch(event.request);
+      })
+    );
+  }
 });

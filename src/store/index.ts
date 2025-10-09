@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useMemo, useSyncExternalStore } from 'react';
 import type {
   AlertEvent,
   AuditLogEntry,
@@ -195,81 +195,11 @@ const store = createStore(initialState);
 
 export const operatorStore = store;
 
-const shallowEqual = (a: unknown, b: unknown): boolean => {
-  if (Object.is(a, b)) {
-    return true;
-  }
-  if (typeof a !== 'object' || a === null || typeof b !== 'object' || b === null) {
-    return false;
-  }
-  if (Array.isArray(a) || Array.isArray(b)) {
-    if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) {
-      return false;
-    }
-    for (let index = 0; index < a.length; index += 1) {
-      if (!Object.is(a[index], b[index])) {
-        return false;
-      }
-    }
-    return true;
-  }
-  const keysA = Object.keys(a as Record<string, unknown>);
-  const keysB = Object.keys(b as Record<string, unknown>);
-  if (keysA.length !== keysB.length) {
-    return false;
-  }
-  for (const key of keysA) {
-    if (!Object.prototype.hasOwnProperty.call(b, key)) {
-      return false;
-    }
-    if (!Object.is((a as Record<string, unknown>)[key], (b as Record<string, unknown>)[key])) {
-      return false;
-    }
-  }
-  return true;
-};
+const getSnapshot = () => store.getState();
 
-const defaultEquality = <Value,>(a: Value, b: Value) => shallowEqual(a, b);
-
-export const useOperatorStore = <T>(
-  selector: (state: OperatorState) => T,
-  equalityFn: (a: T, b: T) => boolean = defaultEquality,
-): T => {
-  const selectorRef = useRef(selector);
-  selectorRef.current = selector;
-  const equalityRef = useRef(equalityFn);
-  equalityRef.current = equalityFn;
-
-  const [selection, setSelection] = useState<T>(() => selector(store.getState()));
-  const selectionRef = useRef(selection);
-  selectionRef.current = selection;
-
-  useEffect(() => {
-    const unsubscribe = store.subscribe((nextState) => {
-      const nextSelection = selectorRef.current(nextState);
-      setSelection((previous) => {
-        if (equalityRef.current(previous, nextSelection)) {
-          return previous;
-        }
-        selectionRef.current = nextSelection;
-        return nextSelection;
-      });
-    });
-    return unsubscribe;
-  }, []);
-
-  useEffect(() => {
-    const nextSelection = selector(store.getState());
-    setSelection((previous) => {
-      if (equalityFn(previous, nextSelection)) {
-        return previous;
-      }
-      selectionRef.current = nextSelection;
-      return nextSelection;
-    });
-  }, [selector, equalityFn]);
-
-  return selection;
+export const useOperatorStore = <T>(selector: (state: OperatorState) => T): T => {
+  const state = useSyncExternalStore(store.subscribe, getSnapshot, getSnapshot);
+  return useMemo(() => selector(state), [state, selector]);
 };
 
 export const initializeStore = (state: Partial<OperatorState>) => {

@@ -1,9 +1,19 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// Vite configuration for the Authyntic demo.
 export default defineConfig({
   plugins: [react()],
+  server: {
+    port: 5173, // Use Vite's default port
+    host: '0.0.0.0', // Important for GitHub Codespaces
+    cors: true,
+    // Add specific CORS headers for GitHub Codespaces
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+    }
+  },
   build: {
     outDir: 'dist',
     sourcemap: true,
