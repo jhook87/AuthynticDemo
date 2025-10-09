@@ -1,6 +1,8 @@
+import { useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { NavLink } from './Router';
 import { useOperatorStore } from '../../store';
+import type { OperatorState } from '../../types';
 
 interface LayoutProps {
   children: ReactNode;
@@ -15,7 +17,8 @@ const navItems = [
 ];
 
 export const Layout = ({ children }: LayoutProps) => {
-  const alerts = useOperatorStore((state) => state.alerts);
+  const selectAlerts = useCallback((state: OperatorState) => state.alerts, []);
+  const alerts = useOperatorStore(selectAlerts);
   return (
     <div className="app-shell">
       <aside className="app-nav">

@@ -1,10 +1,11 @@
-import { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense, useCallback, useEffect } from 'react';
 import { Layout } from './components/shared/Layout';
 import { Router, Route } from './components/shared/Router';
 import { ErrorBoundary } from './components/shared/ErrorBoundary';
 import { LoadingState } from './components/shared/LoadingState';
 import { TutorialOverlay } from './components/shared/TutorialOverlay';
 import { useOperatorStore, initializeStore, restoreTutorialProgress } from './store';
+import type { OperatorState } from './types';
 import { demoStateService } from './services/storage/demoStateService';
 import { useRealtimeSimulation } from './hooks/useRealtimeSimulation';
 
@@ -39,7 +40,8 @@ const ConfigurationCenter = lazy(() =>
 );
 
 const App = () => {
-  const loading = useOperatorStore((state) => state.loading);
+  const selectLoading = useCallback((state: OperatorState) => state.loading, []);
+  const loading = useOperatorStore(selectLoading);
 
   useEffect(() => {
     if (typeof window === 'undefined') {

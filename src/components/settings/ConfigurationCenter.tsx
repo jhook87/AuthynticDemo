@@ -1,14 +1,20 @@
+import { useCallback } from 'react';
 import { useOperatorStore } from '../../store';
 import { formatTimestamp } from '../../utils/formatters';
+import type { OperatorState } from '../../types';
 
 export const ConfigurationCenter = () => {
-  const { webhooks, integrations, tasks, disasterPlans, upgrades } = useOperatorStore((state) => ({
-    webhooks: state.webhooks,
-    integrations: state.integrations,
-    tasks: state.tasks,
-    disasterPlans: state.disasterPlans,
-    upgrades: state.upgrades,
-  }));
+  const selectConfigurationState = useCallback(
+    (state: OperatorState) => ({
+      webhooks: state.webhooks,
+      integrations: state.integrations,
+      tasks: state.tasks,
+      disasterPlans: state.disasterPlans,
+      upgrades: state.upgrades,
+    }),
+    [],
+  );
+  const { webhooks, integrations, tasks, disasterPlans, upgrades } = useOperatorStore(selectConfigurationState);
 
   return (
     <section className="panel settings-panel">

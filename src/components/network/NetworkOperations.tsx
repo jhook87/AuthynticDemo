@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useOperatorStore } from '../../store';
-import type { NetworkNode } from '../../types';
+import type { NetworkNode, OperatorState } from '../../types';
 import { ROLE_COLORS } from '../../constants';
 import { formatLatency, formatPercentage } from '../../utils/formatters';
 import { demoInteractionService } from '../../services/demo/demoInteractionService';
@@ -66,10 +66,14 @@ const drawNetwork = (
 
 export const NetworkOperations = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const { nodes, consensus } = useOperatorStore((state) => ({
-    nodes: state.networkNodes,
-    consensus: state.consensus,
-  }));
+  const selectNetworkState = useCallback(
+    (state: OperatorState) => ({
+      nodes: state.networkNodes,
+      consensus: state.consensus,
+    }),
+    [],
+  );
+  const { nodes, consensus } = useOperatorStore(selectNetworkState);
   const [leaderSpotlight, setLeaderSpotlight] = useState(false);
   const spotlightTimeout = useRef<number | null>(null);
   const animationFrame = useRef<number | null>(null);
