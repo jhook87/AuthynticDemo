@@ -4,42 +4,35 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   server: {
-    port: 5173, // Use Vite's default port
-    host: '0.0.0.0', // Important for GitHub Codespaces
+    port: 5173,
+    host: '0.0.0.0',
     cors: true,
-    // Add specific CORS headers for GitHub Codespaces
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-    }
+    open: false,
+  },
+  preview: {
+    port: 4173,
+    host: '0.0.0.0',
   },
   build: {
     outDir: 'dist',
+    assetsDir: 'assets',
     sourcemap: true,
     rollupOptions: {
       output: {
         manualChunks: {
-          'demo-core': ['react', 'react-dom'],
-          'demo-crypto': [
-            'crypto-js',
+          vendor: ['react', 'react-dom'],
+          ui: ['recharts', 'd3'],
+          crypto: ['crypto-js'],
+          demo: [
             './src/services/demo/demoCryptoService.ts',
-            './src/services/crypto/hashService.ts',
-          ],
-          'demo-visualizations': ['d3', 'recharts'],
-          'demo-ui': [
-            './src/components/shared/Layout.tsx',
-            './src/components/shared/TutorialOverlay.tsx',
+            './src/services/demo/demoInteractionService.ts',
           ],
         },
       },
     },
   },
+  base: './',
   optimizeDeps: {
-    include: ['react', 'react-dom', 'recharts', 'd3'],
-  },
-  server: {
-    port: 3000,
-    open: true,
+    include: ['react', 'react-dom', 'recharts', 'd3', 'crypto-js'],
   },
 });

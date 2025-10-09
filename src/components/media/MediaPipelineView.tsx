@@ -12,6 +12,8 @@ import { SAMPLE_MEDIA, type SampleMediaDefinition } from '../../constants/mediaS
 import { SimulatedVideoFeed } from './SimulatedVideoFeed';
 import { demoCryptoService } from '../../services/demo/demoCryptoService';
 import { demoInteractionService } from '../../services/demo/demoInteractionService';
+import { FeatureCard } from '../shared/FeatureCard';
+import { ProcessingStep } from '../shared/ProcessingStep';
 
 interface HashAnimationState {
   active: boolean;
@@ -155,8 +157,9 @@ export const MediaPipelineView = () => {
     clearSpotlightTimeout();
   }, [clearSpotlightTimeout]);
 
-  const handleSimulatedUpload = useCallback(async () => {
-    const current = assets.find((asset) => asset.id === selected);
+  const handleSimulatedUpload = useCallback(async (assetId?: string) => {
+    const targetId = assetId ?? selected;
+    const current = assets.find((asset) => asset.id === targetId);
     if (!current) {
       setHashAnimation({ active: false, percent: 0, message: 'Select a media asset to begin the simulation.' });
       return;
@@ -202,6 +205,24 @@ export const MediaPipelineView = () => {
     }
   }, [assets, clearSpotlightTimeout, selected, updateHashes]);
 
+  const startDemo = useCallback(
+    async (mediaType: SampleMediaDefinition['type']) => {
+      const matchingAsset = assets.find((asset) => {
+        const definition = definitions.get(asset.id);
+        return definition?.type === mediaType;
+      });
+
+      if (matchingAsset) {
+        setSelected(matchingAsset.id);
+        await handleSimulatedUpload(matchingAsset.id);
+      } else if (assets[0]) {
+        setSelected(assets[0].id);
+        await handleSimulatedUpload(assets[0].id);
+      }
+    },
+    [assets, definitions, handleSimulatedUpload],
+  );
+
   useEffect(() => {
     const unsubscribe = demoInteractionService.on('media.simulateUpload', () => {
       void handleSimulatedUpload();
@@ -240,110 +261,233 @@ export const MediaPipelineView = () => {
   const merkleRoot = useMemo(() => (leaves.length ? deriveRoot(leaves) : null), [leaves]);
   const merkleLevels = useMemo(() => buildDemoMerkleLevels(leaves), [leaves]);
 
+  const pipelineSteps = useMemo(
+    () => {
+      const percent = Math.max(0, Math.min(100, hashAnimation.percent));
+      const baseSteps = [
+        {
+          key: 'hashing',
+          title: 'Generating Hash Signatures',
+          description: 'Parallel hashing across SHA-256, BLAKE2b, and Keccak digests.',
+          start: 0,
+          end: 33,
+        },
+        {
+          key: 'merkle',
+          title: 'Creating Merkle Tree',
+          description: 'Batch aggregation and witness compilation for audit evidence.',
+          start: 33,
+          end: 66,
+        },
+        {
+          key: 'anchoring',
+          title: 'Blockchain Anchoring',
+          description: 'Consensus notarisation and timestamp attestation.',
+          start: 66,
+          end: 100,
+        },
+      ];
+
+      return baseSteps.map((step) => {
+        let status: 'pending' | 'active' | 'complete' = 'pending';
+        if (percent >= step.end) {
+          status = 'complete';
+        } else if (percent > step.start) {
+          status = 'active';
+        }
+
+        const range = step.end - step.start;
+        const progress = percent <= step.start
+          ? 0
+          : percent >= step.end
+            ? 100
+            : ((percent - step.start) / range) * 100;
+
+        if (!hashAnimation.active && percent === 0) {
+          status = 'pending';
+        }
+
+        return {
+          key: step.key,
+          title: step.title,
+          description: step.description,
+          status,
+          progress,
+        };
+      });
+    },
+    [hashAnimation.active, hashAnimation.percent],
+  );
+
+  const processingActive = hashAnimation.active || hashAnimation.percent > 0;
+
   return (
-    <section className="panel media-panel">
-      <header>
-        <h2>Media authenticity pipeline</h2>
-        <p>Hashing, watermarking, and zero-knowledge attestations across sample assets.</p>
-        <div className="media-upload">
+    <div className="media-pipeline-container">
+      <section className="pipeline-hero fade-in">
+        <h1 className="text-display-1">Media Provenance Pipeline</h1>
+        <p className="text-body-lg">
+          Upload or simulate any media file and watch Authyntic orchestrate hashing, Merkle proofs, and blockchain anchoring in
+          real-time.
+        </p>
+        <div className="btn-group">
           <button
             type="button"
-            className="button button--primary"
-            onClick={handleSimulatedUpload}
-            disabled={hashAnimation.active}
+            className="btn btn-primary"
+            onClick={() => {
+              void handleSimulatedUpload();
+            }}
+            disabled={hashAnimation.active || assets.length === 0}
           >
-            {hashAnimation.active ? 'Simulating…' : 'Simulate upload verification'}
+            {hashAnimation.active ? 'Simulating Pipeline…' : 'Start Live Demo'}
           </button>
-          <span>Launch a dramatized end-to-end verification sequence.</span>
         </div>
-      </header>
-      <div className="media-layout">
-        <aside>
-          <ul>
+      </section>
+
+      <section className="upload-demo-section fade-in" style={{ animationDelay: '0.1s' }}>
+        <div className="card upload-zone">
+          <div className="upload-dropzone">
+            <span className="upload-icon" aria-hidden="true">☁️</span>
+            <h3 className="text-heading-2">Drop your media file here</h3>
+            <p className="text-body-lg">Or select from our curated samples to see provenance automation in action.</p>
+            <div className="sample-files">
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => {
+                  void startDemo('image');
+                }}
+                disabled={!assets.length || hashAnimation.active}
+              >
+                📸 Demo Image
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => {
+                  void startDemo('video');
+                }}
+                disabled={!assets.length || hashAnimation.active}
+              >
+                🎥 Demo Video
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => {
+                  void startDemo('audio');
+                }}
+                disabled={!assets.length || hashAnimation.active}
+              >
+                🎵 Demo Audio
+              </button>
+            </div>
+          </div>
+          <div className="media-asset-list">
+            {assets.length === 0 && <div className="loading-skeleton" style={{ height: '64px' }} />}
             {assets.map((asset) => (
-              <li key={asset.id}>
-                <button
-                  type="button"
-                  onClick={() => setSelected(asset.id)}
-                  className={`button button--ghost media-asset-toggle${
-                    asset.id === selected ? ' media-asset-toggle--active' : ''
-                  }`}
-                >
-                  <strong>{asset.title}</strong>
-                  <span>{asset.type}</span>
-                </button>
-              </li>
+              <button
+                type="button"
+                key={asset.id}
+                className={`media-asset-toggle${asset.id === selected ? ' media-asset-toggle--active' : ''}`}
+                onClick={() => setSelected(asset.id)}
+                disabled={hashAnimation.active}
+              >
+                <strong>{asset.title}</strong>
+                <span>{asset.type}</span>
+              </button>
             ))}
-          </ul>
-        </aside>
-        <div className="media-preview">
-          {selectedAsset && (
-            <div className="media-player">
-              {selectedAsset.type === 'image' && (
-                <img src={selectedDefinition?.previewUrl ?? selectedAsset.fileName} alt={selectedAsset.title} />
-              )}
-              {selectedAsset.type === 'audio' && (
-                <audio controls src={selectedDefinition?.previewUrl ?? selectedAsset.fileName} />
-              )}
-              {selectedAsset.type === 'video' && selectedDefinition?.frames && (
-                <SimulatedVideoFeed frames={selectedDefinition.frames} />
-              )}
-              {selectedAsset.type === 'video' && !selectedDefinition?.frames && (
-                <p>Simulated operations feed unavailable.</p>
-              )}
+          </div>
+        </div>
+
+        {processingActive && (
+          <div className="processing-visualization slide-up">
+            <h3 className="text-heading-2">Processing Media File…</h3>
+            <div className="crypto-operations">
+              {pipelineSteps.map((step) => (
+                <ProcessingStep
+                  key={step.key}
+                  title={step.title}
+                  description={step.description}
+                  status={step.status}
+                  progress={step.progress}
+                />
+              ))}
             </div>
-          )}
-          {selectedAsset && (
-            <dl className="media-details">
-              <div>
-                <dt>Fingerprint</dt>
-                <dd>{formatHash(selectedAsset.fingerprint)}</dd>
+          </div>
+        )}
+      </section>
+
+      <section className="media-panel fade-in" style={{ animationDelay: '0.2s' }}>
+        <div className="media-preview">
+          <header>
+            <h2 className="text-heading-2">Media Preview</h2>
+            <p className="text-muted">High-fidelity playback with instant authenticity diagnostics.</p>
+          </header>
+          {selectedAsset ? (
+            <>
+              <div className="media-player">
+                {selectedAsset.type === 'image' && (
+                  <img src={selectedDefinition?.previewUrl ?? selectedAsset.fileName} alt={selectedAsset.title} />
+                )}
+                {selectedAsset.type === 'audio' && (
+                  <audio controls src={selectedDefinition?.previewUrl ?? selectedAsset.fileName} />
+                )}
+                {selectedAsset.type === 'video' && selectedDefinition?.frames && (
+                  <SimulatedVideoFeed frames={selectedDefinition.frames} />
+                )}
+                {selectedAsset.type === 'video' && !selectedDefinition?.frames && <p>Simulated operations feed unavailable.</p>}
               </div>
-              <div>
-                <dt>Authenticity</dt>
-                <dd>{selectedAsset.authenticityScore.toFixed(1)} / 100</dd>
-              </div>
-              <div>
-                <dt>Last updated</dt>
-                <dd>{formatTimestamp(selectedAsset.lastUpdated)}</dd>
-              </div>
-            </dl>
+              <dl className="media-details">
+                <div>
+                  <dt>Fingerprint</dt>
+                  <dd>{formatHash(selectedAsset.fingerprint)}</dd>
+                </div>
+                <div>
+                  <dt>Authenticity score</dt>
+                  <dd>{selectedAsset.authenticityScore.toFixed(1)} / 100</dd>
+                </div>
+                <div>
+                  <dt>Last updated</dt>
+                  <dd>{formatTimestamp(selectedAsset.lastUpdated)}</dd>
+                </div>
+              </dl>
+            </>
+          ) : (
+            <div className="loading-skeleton" style={{ height: '220px' }} />
           )}
         </div>
-        <div className="media-analytics">
-          <section
-            className={`crypto-progress demo-transition${hashAnimation.active ? ' hash-generation-animation' : ''}${
-              hashSpotlight ? ' crypto-progress--spotlight' : ''
+
+        <div
+          className={`crypto-progress${hashSpotlight ? ' slide-up' : ''}`}
+          aria-live="polite"
+          ref={progressRef}
+        >
+          <h2 className="text-heading-2">Cryptographic Operations</h2>
+          <p
+            className={`crypto-progress-message${
+              hashAnimation.hash ? ' crypto-progress-message--success' : ''
             }`}
-            aria-live="polite"
-            ref={progressRef}
+            role="status"
           >
-            <h3>Hash generation demo</h3>
-            <p
-              className={`crypto-progress-message${
-                hashAnimation.hash ? ' crypto-progress-message--success' : ''
-              }${hashAnimation.percent === 0 && !hashAnimation.active ? ' crypto-progress-message--idle' : ''}`}
-              role="status"
-            >
-              {hashAnimation.message}
-            </p>
+            {hashAnimation.message}
+          </p>
+          <div className="progress-bar" role="presentation">
             <div
-              className="crypto-progress-bar"
-              role="progressbar"
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={Math.round(hashAnimation.percent)}
-            >
-              <span style={{ width: `${Math.min(100, Math.max(0, hashAnimation.percent))}%` }} aria-hidden="true" />
-            </div>
-            {hashAnimation.hash && (
-              <p className="crypto-progress-hash" aria-live="assertive">
-                Demo hash <code>{formatHash(hashAnimation.hash)}</code>
-              </p>
-            )}
-          </section>
+              className="progress-fill"
+              style={{ width: `${Math.min(100, Math.max(0, hashAnimation.percent))}%` }}
+              aria-hidden="true"
+            />
+          </div>
+          {hashAnimation.hash && (
+            <p className="crypto-progress-message crypto-progress-message--success" aria-live="assertive">
+              Demo hash <code>{formatHash(hashAnimation.hash)}</code>
+            </p>
+          )}
+        </div>
+
+        <div className="media-insights">
           <section>
-            <h3>Multi-algorithm hashing</h3>
+            <h3 className="text-heading-2" style={{ fontSize: '1.25rem' }}>Multi-algorithm hashing</h3>
             <ul>
               {Object.entries(hashes).map(([algorithm, digest]) => (
                 <li key={algorithm}>
@@ -353,9 +497,10 @@ export const MediaPipelineView = () => {
               ))}
             </ul>
           </section>
+
           {merkleLevels.length > 0 && (
             <section>
-              <h3>Merkle tree reconstruction</h3>
+              <h3 className="text-heading-2" style={{ fontSize: '1.25rem' }}>Merkle tree reconstruction</h3>
               <div className="merkle-tree-visualizer" role="list">
                 {merkleLevels.map((level, levelIndex) => (
                   <div
@@ -365,7 +510,7 @@ export const MediaPipelineView = () => {
                     aria-label={`Level ${levelIndex + 1}`}
                   >
                     {level.map((hash, nodeIndex) => (
-                      <span className="merkle-node demo-transition" key={`merkle-node-${levelIndex}-${nodeIndex}`}>
+                      <span className="merkle-node" key={`merkle-node-${levelIndex}-${nodeIndex}`}>
                         <small>
                           {levelIndex === 0
                             ? 'Leaf'
@@ -381,25 +526,30 @@ export const MediaPipelineView = () => {
               </div>
             </section>
           )}
+
           {watermark && (
             <section>
-              <h3>Watermark</h3>
-              <p>Strength {watermark.watermarkStrength.toFixed(2)} · Detection {watermark.detectionConfidence.toFixed(2)}</p>
+              <h3 className="text-heading-2" style={{ fontSize: '1.25rem' }}>Watermark intelligence</h3>
+              <p>
+                Strength {watermark.watermarkStrength.toFixed(2)} · Detection {watermark.detectionConfidence.toFixed(2)}
+              </p>
               <p>{watermark.reversible ? 'Reversible' : 'Permanent'} watermark applied {formatTimestamp(watermark.appliedAt)}</p>
             </section>
           )}
+
           {timestampRecord && (
             <section>
-              <h3>Blockchain anchoring</h3>
+              <h3 className="text-heading-2" style={{ fontSize: '1.25rem' }}>Blockchain anchoring</h3>
               <p>
                 Anchored on {timestampRecord.anchorChain} · Tx {timestampRecord.transactionHash.slice(0, 14)}…
               </p>
               <p>{timestampRecord.confirmed ? 'Confirmed' : 'Awaiting confirmations'}</p>
             </section>
           )}
+
           {moderation && (
             <section>
-              <h3>Content moderation</h3>
+              <h3 className="text-heading-2" style={{ fontSize: '1.25rem' }}>Content moderation</h3>
               <p>Risk level {moderation.riskLevel}</p>
               {moderation.policyViolations.length > 0 && (
                 <ul>
@@ -410,22 +560,48 @@ export const MediaPipelineView = () => {
               )}
             </section>
           )}
+
           {batchProof && merkleRoot && (
             <section>
-              <h3>Merkle verification</h3>
+              <h3 className="text-heading-2" style={{ fontSize: '1.25rem' }}>Merkle verification</h3>
               <p>Root {formatHash(merkleRoot)}</p>
               <p>Batch verified {batchProof.proofs.filter((proof) => proof.verified).length} / {batchProof.proofs.length}</p>
             </section>
           )}
+
           {zkProof && (
             <section>
-              <h3>Zero-knowledge attestation</h3>
+              <h3 className="text-heading-2" style={{ fontSize: '1.25rem' }}>Zero-knowledge attestation</h3>
               <p>{zkProof.statement}</p>
               <p>{zkProof.verified ? 'Proof verified' : 'Verification pending'} · Confidence {zkProof.confidence.toFixed(2)}</p>
             </section>
           )}
         </div>
-      </div>
-    </section>
+      </section>
+
+      <section className="features-showcase grid grid-3 fade-in" style={{ animationDelay: '0.3s' }}>
+        <FeatureCard
+          title="Cryptographic Hashing"
+          description="Layered digest generation creates immutable digital fingerprints for every media asset."
+          businessValue="99.99% tamper detection accuracy"
+          techDetails="SHA-256 · BLAKE2b · Keccak orchestration"
+          icon="🔐"
+        />
+        <FeatureCard
+          title="Blockchain Anchoring"
+          description="Distributed ledger notarisation ensures defensible provenance evidence."
+          businessValue="Legal-grade proof of ownership"
+          techDetails="Cross-chain timestamping · Consensus validation"
+          icon="⛓️"
+        />
+        <FeatureCard
+          title="Zero-Knowledge Proofs"
+          description="Privacy-preserving attestations confirm authenticity without exposing sensitive media."
+          businessValue="Privacy-first compliance"
+          techDetails="zkSNARKs · Selective disclosure workflows"
+          icon="🧠"
+        />
+      </section>
+    </div>
   );
 };
