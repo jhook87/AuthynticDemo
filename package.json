@@ -4,12 +4,11 @@
   "description": "Interactive web demo of the Authyntic media provenance platform",
   "type": "module",
   "scripts": {
-    "dev": "vite --host 0.0.0.0 --port 5173",
-    "build": "tsc && vite build",
+    "dev": "vite",
+    "build": "npm run build:lib && vite build",
     "build:lib": "tsc -p tsconfig.build.json && node scripts/prepare-build.cjs",
-    "preview": "vite preview --host 0.0.0.0 --port 4173",
-    "test": "npm run build:lib && node tests/crypto.test.cjs",
-    "clean": "rm -rf node_modules package-lock.json && npm install"
+    "preview": "vite preview",
+    "test": "npm run build:lib && node --test --experimental-test-coverage tests/**/*.test.cjs"
   },
   "dependencies": {
     "react": "^18.2.0",
@@ -19,6 +18,9 @@
     "recharts": "^2.8.0"
   },
   "devDependencies": {
+    "@types/react": "^18.2.37",
+    "@types/react-dom": "^18.2.15",
+    "@types/d3": "^7.4.3",
     "@vitejs/plugin-react": "^4.1.0",
     "typescript": "^5.2.2",
     "vite": "^4.4.9"

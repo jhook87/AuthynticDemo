@@ -73,7 +73,6 @@ export const NavLink = ({ to, children, className }: NavLinkProps) => {
       type="button"
       onClick={() => navigate(to)}
       className={`${className ?? ''} ${active ? 'nav-active' : ''}`.trim()}
-      aria-current={active ? 'page' : undefined}
     >
       {children}
     </button>

@@ -1,37 +1,30 @@
-const isCodespacesHost = () =>
-  location.hostname.includes('github.dev') || location.hostname.includes('app.github.dev');
+const CACHE_NAME = 'authyntic-cache-v2';
+const ASSETS = ['/', '/index.html', '/manifest.json'];
 
 self.addEventListener('install', (event) => {
-  console.log('Service worker installing...');
-
-  if (isCodespacesHost()) {
-    self.skipWaiting();
-    return;
-  }
-
   event.waitUntil(
-    caches.open('authyntic-demo-v1').then((cache) =>
-      cache.addAll([
-        '/',
-        '/index.html',
-      ]),
-    ),
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)).then(() => self.skipWaiting()),
   );
 });
 
 self.addEventListener('activate', (event) => {
-  console.log('Service worker activating...');
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(
+        keys.map((key) => {
+          if (key !== CACHE_NAME) {
+            return caches.delete(key);
+          }
+          return undefined;
+        }),
+      ),
+    ),
+  );
+  self.clients.claim();
 });
 
 self.addEventListener('fetch', (event) => {
-  if (isCodespacesHost()) {
-    return;
-  }
-
-  if (event.request.url.startsWith(self.location.origin)) {
-    event.respondWith(
-      caches.match(event.request).then((response) => response || fetch(event.request)),
-    );
-  }
+  event.respondWith(
+    caches.match(event.request).then((cached) => cached || fetch(event.request)),
+  );
 });
