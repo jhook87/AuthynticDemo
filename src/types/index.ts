@@ -221,6 +221,7 @@ export interface TutorialStep {
   actionId?: string;
   ctaLabel?: string;
   helperText?: string;
+  demoAction?: () => void;
 }
 
 export interface TutorialProgressState {

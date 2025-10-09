@@ -1,25 +1,64 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { Layout } from './components/shared/Layout';
 import { Router, Route } from './components/shared/Router';
 import { ErrorBoundary } from './components/shared/ErrorBoundary';
 import { LoadingState } from './components/shared/LoadingState';
-import { OperatorDashboard } from './components/dashboard/OperatorDashboard';
-import { NetworkOperations } from './components/network/NetworkOperations';
-import { MediaPipelineView } from './components/media/MediaPipelineView';
-import { AnalyticsCenter } from './components/analytics/AnalyticsCenter';
-import { ConfigurationCenter } from './components/settings/ConfigurationCenter';
 import { TutorialOverlay } from './components/shared/TutorialOverlay';
 import { useOperatorStore, initializeStore, restoreTutorialProgress } from './store';
 import { demoStateService } from './services/storage/demoStateService';
 import { useRealtimeSimulation } from './hooks/useRealtimeSimulation';
 
+const OperatorDashboard = lazy(() =>
+  import('./components/dashboard/OperatorDashboard').then((module) => ({
+    default: module.OperatorDashboard,
+  })),
+);
+
+const NetworkOperations = lazy(() =>
+  import('./components/network/NetworkOperations').then((module) => ({
+    default: module.NetworkOperations,
+  })),
+);
+
+const MediaPipelineView = lazy(() =>
+  import('./components/media/MediaPipelineView').then((module) => ({
+    default: module.MediaPipelineView,
+  })),
+);
+
+const AnalyticsCenter = lazy(() =>
+  import('./components/analytics/AnalyticsCenter').then((module) => ({
+    default: module.AnalyticsCenter,
+  })),
+);
+
+const ConfigurationCenter = lazy(() =>
+  import('./components/settings/ConfigurationCenter').then((module) => ({
+    default: module.ConfigurationCenter,
+  })),
+);
+
 const App = () => {
   const loading = useOperatorStore((state) => state.loading);
-  const [darkMode, setDarkMode] = useState(true);
 
   useEffect(() => {
-    document.body.dataset.theme = darkMode ? 'dark' : 'light';
-  }, [darkMode]);
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+    const applyTheme = (matches: boolean) => {
+      document.body.dataset.theme = matches ? 'dark' : 'light';
+    };
+
+    applyTheme(media.matches);
+    const handleChange = (event: MediaQueryListEvent) => applyTheme(event.matches);
+    if (typeof media.addEventListener === 'function') {
+      media.addEventListener('change', handleChange);
+      return () => media.removeEventListener('change', handleChange);
+    }
+    media.addListener(handleChange);
+    return () => media.removeListener(handleChange);
+  }, []);
 
   useEffect(() => {
     initializeStore({});
@@ -37,13 +76,15 @@ const App = () => {
 
   return (
     <Router>
-      <Layout darkMode={darkMode} onToggleTheme={() => setDarkMode((value) => !value)}>
+      <Layout>
         <ErrorBoundary>
-          <Route path="/" element={<OperatorDashboard />} />
-          <Route path="/network" element={<NetworkOperations />} />
-          <Route path="/media" element={<MediaPipelineView />} />
-          <Route path="/analytics" element={<AnalyticsCenter />} />
-          <Route path="/settings" element={<ConfigurationCenter />} />
+          <Suspense fallback={<LoadingState message="Preparing interactive workspace" />}>
+            <Route path="/" element={<OperatorDashboard />} />
+            <Route path="/network" element={<NetworkOperations />} />
+            <Route path="/media" element={<MediaPipelineView />} />
+            <Route path="/analytics" element={<AnalyticsCenter />} />
+            <Route path="/settings" element={<ConfigurationCenter />} />
+          </Suspense>
         </ErrorBoundary>
         <TutorialOverlay />
       </Layout>

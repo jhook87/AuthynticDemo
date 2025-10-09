@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from 'react';
+import { useMemo, useSyncExternalStore } from 'react';
 import type {
   AlertEvent,
   AuditLogEntry,
@@ -20,6 +20,7 @@ import { buildTrustMetrics, buildPerformanceBenchmarks } from '../services/api/r
 import { buildAuditTrail } from '../services/storage/auditLogService';
 import { minutesAgo, hoursFromNow } from '../utils/time';
 import { randomId } from '../utils/random';
+import { demoInteractionService } from '../services/demo/demoInteractionService';
 
 const initialNodes = bootstrapNetwork();
 
@@ -50,30 +51,34 @@ const tutorialSteps = [
     description: 'Trigger the simulated authenticity pipeline to see hashing, watermarking and moderation in action.',
     target: '.media-upload',
     helperText: 'Press the Simulate upload button inside the media panel to watch the pipeline animate.',
+    demoAction: () => demoInteractionService.trigger('media.simulateUpload'),
   },
   {
     id: 'hash-visualizer',
     title: 'Animated cryptographic pipeline',
     description: 'Watch our dramatized hashing workflow complete with staged progress updates for the demo.',
     target: '.crypto-progress',
+    demoAction: () => demoInteractionService.trigger('media.focusHashPanel'),
   },
   {
     id: 'network-operations',
     title: 'Consortium network awareness',
     description: 'Follow consensus leaders, latencies and topology shifts from the animated network view.',
     target: '.network-visualization',
+    demoAction: () => demoInteractionService.trigger('network.highlightConsensus'),
   },
   {
     id: 'analytics-intelligence',
     title: 'Predictive analytics',
     description: 'Dive into projections, benchmarks and fraud pattern discovery inside analytics.',
     target: '.analytics-panel',
+    demoAction: () => demoInteractionService.trigger('analytics.scrollToIntelligence'),
   },
   {
     id: 'demo-complete',
     title: 'You are ready to explore',
-    description: 'Experiment freely, toggle visual themes, and reopen the tour from the helper when you need a refresher.',
-    target: '.theme-switch',
+    description: 'Experiment freely across the workspaces and reopen the tour helper whenever you need a refresher.',
+    target: '.app-nav__brand',
     ctaLabel: 'Finish tour',
   },
 ] as const;
@@ -190,8 +195,12 @@ const store = createStore(initialState);
 
 export const operatorStore = store;
 
-export const useOperatorStore = <T>(selector: (state: OperatorState) => T): T =>
-  useSyncExternalStore(store.subscribe, () => selector(store.getState()));
+const getSnapshot = () => store.getState();
+
+export const useOperatorStore = <T>(selector: (state: OperatorState) => T): T => {
+  const state = useSyncExternalStore(store.subscribe, getSnapshot, getSnapshot);
+  return useMemo(() => selector(state), [state, selector]);
+};
 
 export const initializeStore = (state: Partial<OperatorState>) => {
   store.setState({ ...state, loading: false, initializedAt: Date.now() } as Partial<OperatorState>);
