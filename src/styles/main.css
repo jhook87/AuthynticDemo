@@ -1000,7 +1000,15 @@ button {
   padding: var(--space-2);
   box-shadow: var(--shadow-elevated);
   position: relative;
+  padding: var(--space-2);
+  border-radius: 4px;
+  background: rgba(10, 16, 24, 0.72);
+  border: var(--border-subtle);
+  box-shadow: var(--shadow-elevated);
+  display: grid;
+  gap: var(--space-1);
   overflow: hidden;
+  transition: transform var(--transition-default), border-color var(--transition-fast);
 }
 
 .card::before {
@@ -1543,6 +1551,54 @@ button {
     justify-content: space-between;
   }
 
+@keyframes radar {
+  0% {
+    transform: scale(0.4);
+    opacity: 0.8;
+  }
+  70% {
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+}
+
+@keyframes latency-wave {
+  0% {
+    transform: scale(0.4);
+    opacity: 0.6;
+  }
+  80% {
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.2);
+    opacity: 0;
+  }
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .app-shell {
+    grid-template-columns: 280px 1fr;
+  }
+
+  .command-header {
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .command-header__left {
+    max-width: 100%;
+  }
+
+  .command-header__right {
+    width: 100%;
+    justify-content: space-between;
+  }
+
   .command-center__panels,
   .command-center__intel {
     grid-template-columns: repeat(12, minmax(0, 1fr));
@@ -1591,6 +1647,15 @@ button {
   .mission-feed__item[data-branch='right'] {
     margin: 0;
   }
+
+  .mission-feed__timeline::before {
+    left: 2rem;
+  }
+
+  .mission-feed__item::before {
+    left: 1rem;
+  }
+}
 
   .mission-feed__timeline::before {
     left: 2rem;
