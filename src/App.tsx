@@ -9,22 +9,59 @@ import { MediaPipelineView } from './components/media/MediaPipelineView';
 import { AnalyticsCenter } from './components/analytics/AnalyticsCenter';
 import { ConfigurationCenter } from './components/settings/ConfigurationCenter';
 import { TutorialOverlay } from './components/shared/TutorialOverlay';
-import { useOperatorStore, initializeStore } from './store';
+import { LoginGate } from './components/shared/LoginGate';
+import { useOperatorStore, initializeStore, resetScenarios } from './store';
 import { useRealtimeSimulation } from './hooks/useRealtimeSimulation';
+
+interface SessionState {
+  token: string;
+  operator: {
+    name: string;
+    role: string;
+  };
+}
 
 const App = () => {
   const loading = useOperatorStore((state) => state.loading);
   const [darkMode, setDarkMode] = useState(true);
+  const [session, setSession] = useState<SessionState | null>(() => {
+    if (typeof window === 'undefined') {
+      return null;
+    }
+    const persisted = window.localStorage.getItem('authyntic-demo-session');
+    return persisted ? (JSON.parse(persisted) as SessionState) : null;
+  });
 
   useEffect(() => {
     document.body.dataset.theme = darkMode ? 'dark' : 'light';
   }, [darkMode]);
 
   useEffect(() => {
-    initializeStore({});
-  }, []);
+    if (!session) {
+      resetScenarios();
+      if (typeof window !== 'undefined') {
+        window.localStorage.removeItem('authyntic-demo-session');
+      }
+      return;
+    }
 
-  useRealtimeSimulation();
+    initializeStore({});
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('authyntic-demo-session', JSON.stringify(session));
+    }
+  }, [session]);
+
+  useRealtimeSimulation(Boolean(session));
+
+  if (!session) {
+    return (
+      <LoginGate
+        onAuthenticated={(nextSession) => {
+          setSession(nextSession);
+        }}
+      />
+    );
+  }
 
   if (loading) {
     return <LoadingState message="Loading Authyntic operator workspace" />;
@@ -32,7 +69,12 @@ const App = () => {
 
   return (
     <Router>
-      <Layout darkMode={darkMode} onToggleTheme={() => setDarkMode((value) => !value)}>
+      <Layout
+        darkMode={darkMode}
+        onToggleTheme={() => setDarkMode((value) => !value)}
+        operator={session.operator}
+        onSignOut={() => setSession(null)}
+      >
         <ErrorBoundary>
           <Route path="/" element={<OperatorDashboard />} />
           <Route path="/network" element={<NetworkOperations />} />

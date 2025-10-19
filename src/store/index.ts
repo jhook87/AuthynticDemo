@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import type {
+  ActivityRecord,
   AlertEvent,
   AuditLogEntry,
   ConsensusSnapshot,
@@ -8,8 +9,12 @@ import type {
   NetworkNode,
   OperatorState,
   PerformanceBenchmark,
+  RegistrationRecord,
+  ScenarioMoment,
+  ScriptedScenario,
   SystemHealthMetric,
   TrustMetric,
+  UserSummary,
 } from '../types';
 import { createStore } from './createStore';
 import { bootstrapNetwork } from '../services/network/networkSimulationService';
@@ -22,6 +27,45 @@ import { randomId } from '../utils/random';
 
 const initialNodes = bootstrapNetwork();
 
+const buildInitialUserSummary = (): UserSummary => ({
+  total: 128,
+  active: 117,
+  admin: 24,
+  suspended: 6,
+  biometricEnabled: 42,
+});
+
+const initialScenarios: ScriptedScenario[] = [
+  {
+    id: 'onboarding-surge',
+    title: 'Onboarding Surge',
+    description: 'Coordinated rollout of new operator credentials.',
+    status: 'pending',
+    icon: 'users',
+  },
+  {
+    id: 'role-hardening',
+    title: 'Role Hardening',
+    description: 'Privilege updates for admin cohort.',
+    status: 'pending',
+    icon: 'shield',
+  },
+  {
+    id: 'biometric-pilot',
+    title: 'Biometric Pilot',
+    description: 'FIDO2 activation and attestation checks.',
+    status: 'pending',
+    icon: 'fingerprint',
+  },
+  {
+    id: 'suspension-review',
+    title: 'Suspension Review',
+    description: 'Trust team sweeps inactive or risky accounts.',
+    status: 'pending',
+    icon: 'alert',
+  },
+];
+
 const initialState: OperatorState = {
   loading: true,
   initializedAt: undefined,
@@ -31,6 +75,11 @@ const initialState: OperatorState = {
   mediaAssets: [],
   trustMetrics: buildTrustMetrics(),
   alerts: [],
+  userSummary: buildInitialUserSummary(),
+  registrations: [],
+  activityFeed: [],
+  scenarios: initialScenarios,
+  scenarioMoments: [],
   auditLog: buildAuditTrail(),
   tasks: [
     {
@@ -164,6 +213,42 @@ export const updateNetworkNodes = (nodes: NetworkNode[]) => {
 
 export const pushAlert = (alert: AlertEvent) => {
   store.setState(({ alerts }) => ({ alerts: [alert, ...alerts].slice(0, 10) }));
+};
+
+export const updateUserSummary = (updater: (summary: UserSummary) => UserSummary) => {
+  store.setState(({ userSummary }) => ({ userSummary: updater(userSummary) }));
+};
+
+export const pushRegistration = (record: RegistrationRecord) => {
+  store.setState(({ registrations }) => ({ registrations: [record, ...registrations].slice(0, 6) }));
+};
+
+export const pushActivity = (record: ActivityRecord) => {
+  store.setState(({ activityFeed }) => ({ activityFeed: [record, ...activityFeed].slice(0, 8) }));
+};
+
+export const setScenarioStatus = (scenarioId: string, status: ScriptedScenario['status']) => {
+  store.setState(({ scenarios }) => ({
+    scenarios: scenarios.map((scenario) =>
+      scenario.id === scenarioId ? { ...scenario, status, lastUpdated: Date.now() } : scenario,
+    ),
+  }));
+};
+
+export const pushScenarioMoment = (moment: ScenarioMoment) => {
+  store.setState(({ scenarioMoments }) => ({
+    scenarioMoments: [moment, ...scenarioMoments].slice(0, 12),
+  }));
+};
+
+export const resetScenarios = () => {
+  store.setState({
+    scenarios: initialScenarios.map((scenario) => ({ ...scenario })),
+    scenarioMoments: [],
+    registrations: [],
+    activityFeed: [],
+    userSummary: buildInitialUserSummary(),
+  });
 };
 
 export const updateIncidents = (incidents: NetworkIncident[]) => {
