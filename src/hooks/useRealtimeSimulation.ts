@@ -21,6 +21,9 @@ import { generateIncidents } from '../services/api/incidentService';
 import { randomId } from '../utils/random';
 import { SCENARIO_SCRIPTS, scenarioEventId } from '../constants/scenarios';
 
+const isDocumentVisible = () =>
+  typeof document === 'undefined' || document.visibilityState !== 'hidden';
+
 const applyImpactToSummary = (impact: { total?: number; active?: number; admin?: number; suspended?: number; biometricEnabled?: number }) => {
   updateUserSummary((summary) => ({
     ...summary,
@@ -39,6 +42,7 @@ export const useRealtimeSimulation = (enabled = true) => {
     }
 
     const latencyInterval = window.setInterval(() => {
+      if (!isDocumentVisible()) return;
       const { networkNodes } = operatorStore.getState();
       const shifted = simulateLatencyShift(networkNodes);
       const { nodes: adjusted } = adjustReputation(shifted);
@@ -46,16 +50,19 @@ export const useRealtimeSimulation = (enabled = true) => {
     }, 8_000);
 
     const consensusInterval = window.setInterval(() => {
+      if (!isDocumentVisible()) return;
       const { consensus, networkNodes } = operatorStore.getState();
       updateConsensus(simulateConsensus(consensus, networkNodes));
     }, 10_000);
 
     const trustInterval = window.setInterval(() => {
+      if (!isDocumentVisible()) return;
       updateTrustMetrics(buildTrustMetrics());
       updateBenchmarks(buildPerformanceBenchmarks());
     }, 20_000);
 
     const incidentInterval = window.setInterval(() => {
+      if (!isDocumentVisible()) return;
       const { networkNodes } = operatorStore.getState();
       updateIncidents(generateIncidents(networkNodes.map((node) => node.id)));
       pushAlert({
@@ -69,6 +76,9 @@ export const useRealtimeSimulation = (enabled = true) => {
     }, 30_000);
 
     const partitionTimeout = window.setTimeout(() => {
+      if (!isDocumentVisible()) {
+        return;
+      }
       const { networkNodes } = operatorStore.getState();
       const [segmentA, segmentB] = simulatePartition(networkNodes);
       pushAlert({
@@ -80,6 +90,7 @@ export const useRealtimeSimulation = (enabled = true) => {
         acknowledged: false,
       });
       window.setTimeout(() => {
+        if (!isDocumentVisible()) return;
         updateNetworkNodes(recoverPartition([segmentA, segmentB]));
       }, 7_000);
     }, 15_000);

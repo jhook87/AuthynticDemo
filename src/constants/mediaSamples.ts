@@ -1,4 +1,3 @@
-
 // Generated sample media constants to avoid shipping binary assets in the repository.
 // The image and audio samples are stored as base64 strings while the video feed is a
 // lightweight ASCII animation rendered at runtime.
@@ -14,40 +13,25 @@ export interface SampleMediaDefinition {
 }
 
 const SAMPLE_IMAGE_BASE64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=';
-const SAMPLE_AUDIO_BASE64 = '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';
-const SIMULATED_VIDEO_FRAMES: string[][] = [
-  [
-    "┌────────────┐",
-    "│ AUTHENTIC  │",
-    "│ SIGNAL FEED│",
-    "│ ▓▓▒▒░░░░▒▒ │",
-    "└────────────┘"
-  ],
-  [
-    "┌────────────┐",
-    "│ AUTHENTIC  │",
-    "│ SIGNAL FEED│",
-    "│ ░░▒▒▓▓▒▒░░ │",
-    "└────────────┘"
-  ],
-  [
-    "┌────────────┐",
-    "│ AUTHENTIC  │",
-    "│ SIGNAL FEED│",
-    "│ ▒▒░░▒▒▓▓▒▒ │",
-    "└────────────┘"
-  ],
-  [
-    "┌────────────┐",
-    "│ AUTHENTIC  │",
-    "│ SIGNAL FEED│",
-    "│ ░░░░▒▒▒▒▓▓ │",
-    "└────────────┘"
-  ]
-];
-const SIMULATED_VIDEO_DATA = '{"frames": [["┌────────────┐", "│ AUTHENTIC  │", "│ SIGNAL FEED│", "│ ▓▓▒▒░░░░▒▒ │", "└────────────┘"], ["┌────────────┐", "│ AUTHENTIC  │", "│ SIGNAL FEED│", "│ ░░▒▒▓▓▒▒░░ │", "└────────────┘"], ["┌────────────┐", "│ AUTHENTIC  │", "│ SIGNAL FEED│", "│ ▒▒░░▒▒▓▓▒▒ │", "└────────────┘"], ["┌────────────┐", "│ AUTHENTIC  │", "│ SIGNAL FEED│", "│ ░░░░▒▒▒▒▓▓ │", "└────────────┘"]]}';
 
 const BASE64_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+const BASE64_CHARS = BASE64_ALPHABET.slice(0, 64);
+const BASE64_PAD = BASE64_ALPHABET.charAt(64);
+
+const encodeBase64 = (data: Uint8Array): string => {
+  let output = '';
+  for (let index = 0; index < data.length; index += 3) {
+    const chunk = (data[index] << 16) | ((data[index + 1] ?? 0) << 8) | (data[index + 2] ?? 0);
+    const enc1 = (chunk >> 18) & 63;
+    const enc2 = (chunk >> 12) & 63;
+    const enc3 = (chunk >> 6) & 63;
+    const enc4 = chunk & 63;
+    output += BASE64_CHARS[enc1] + BASE64_CHARS[enc2];
+    output += index + 1 < data.length ? BASE64_CHARS[enc3] : BASE64_PAD;
+    output += index + 2 < data.length ? BASE64_CHARS[enc4] : BASE64_PAD;
+  }
+  return output;
+};
 
 const decodeBase64 = (value: string): ArrayBuffer => {
   const sanitized = value.replace(/[^A-Za-z0-9+/=]/g, '');
@@ -85,6 +69,107 @@ const decodeBase64 = (value: string): ArrayBuffer => {
   return bytes.buffer;
 };
 
+const createToneSample = (
+  frequency = 440,
+  durationMs = 48,
+  sampleRate = 16_000,
+  amplitude = 0.6,
+): Uint8Array => {
+  const totalSamples = Math.max(1, Math.round((durationMs / 1_000) * sampleRate));
+  const bytesPerSample = 2; // 16-bit mono PCM
+  const dataSize = totalSamples * bytesPerSample;
+  const buffer = new ArrayBuffer(44 + dataSize);
+  const view = new DataView(buffer);
+  let offset = 0;
+
+  const writeString = (value: string) => {
+    for (let i = 0; i < value.length; i += 1) {
+      view.setUint8(offset, value.charCodeAt(i));
+      offset += 1;
+    }
+  };
+
+  const writeUint32 = (value: number) => {
+    view.setUint32(offset, value, true);
+    offset += 4;
+  };
+
+  const writeUint16 = (value: number) => {
+    view.setUint16(offset, value, true);
+    offset += 2;
+  };
+
+  writeString('RIFF');
+  writeUint32(36 + dataSize);
+  writeString('WAVE');
+  writeString('fmt ');
+  writeUint32(16);
+  writeUint16(1); // PCM format
+  writeUint16(1); // mono
+  writeUint32(sampleRate);
+  writeUint32(sampleRate * bytesPerSample);
+  writeUint16(bytesPerSample);
+  writeUint16(8 * bytesPerSample);
+  writeString('data');
+  writeUint32(dataSize);
+
+  const fadeSamples = Math.max(1, Math.min(Math.floor(totalSamples / 8), 16));
+  for (let sampleIndex = 0; sampleIndex < totalSamples; sampleIndex += 1) {
+    const time = sampleIndex / sampleRate;
+    const envelope = (() => {
+      if (sampleIndex < fadeSamples) {
+        return sampleIndex / fadeSamples;
+      }
+      if (sampleIndex >= totalSamples - fadeSamples) {
+        return (totalSamples - sampleIndex - 1) / fadeSamples;
+      }
+      return 1;
+    })();
+    const sampleValue = Math.sin(2 * Math.PI * frequency * time) * amplitude * envelope;
+    view.setInt16(offset, Math.round(sampleValue * 0x7fff), true);
+    offset += bytesPerSample;
+  }
+
+  return new Uint8Array(buffer);
+};
+
+const SAMPLE_AUDIO_BYTES = createToneSample();
+const SAMPLE_AUDIO_BASE64 = encodeBase64(SAMPLE_AUDIO_BYTES);
+const cloneAudioBuffer = (): ArrayBuffer => SAMPLE_AUDIO_BYTES.slice().buffer;
+
+const SIMULATED_VIDEO_FRAMES: string[][] = [
+  [
+    '┌────────────┐',
+    '│ AUTHENTIC  │',
+    '│ SIGNAL FEED│',
+    '│ ▓▓▒▒░░░░▒▒ │',
+    '└────────────┘',
+  ],
+  [
+    '┌────────────┐',
+    '│ AUTHENTIC  │',
+    '│ SIGNAL FEED│',
+    '│ ░░▒▒▓▓▒▒░░ │',
+    '└────────────┘',
+  ],
+  [
+    '┌────────────┐',
+    '│ AUTHENTIC  │',
+    '│ SIGNAL FEED│',
+    '│ ▒▒░░▒▒▓▓▒▒ │',
+    '└────────────┘',
+  ],
+  [
+    '┌────────────┐',
+    '│ AUTHENTIC  │',
+    '│ SIGNAL FEED│',
+    '│ ░░░░▒▒▒▒▓▓ │',
+    '└────────────┘',
+  ],
+];
+
+const serializeVideoFrames = () => JSON.stringify({ frames: SIMULATED_VIDEO_FRAMES });
+
 export const SAMPLE_MEDIA: SampleMediaDefinition[] = [
   {
     id: 'synthetic-image',
@@ -100,14 +185,14 @@ export const SAMPLE_MEDIA: SampleMediaDefinition[] = [
     title: '440Hz Reference Tone',
     fileName: 'data:audio/wav;base64,' + SAMPLE_AUDIO_BASE64,
     previewUrl: 'data:audio/wav;base64,' + SAMPLE_AUDIO_BASE64,
-    getData: () => Promise.resolve(decodeBase64(SAMPLE_AUDIO_BASE64)),
+    getData: () => Promise.resolve(cloneAudioBuffer()),
   },
   {
     id: 'simulated-video',
     type: 'video',
     title: 'Simulated Operations Feed',
     fileName: 'simulated-video-sequence.json',
-    getData: () => Promise.resolve(new TextEncoder().encode(SIMULATED_VIDEO_DATA).buffer),
+    getData: () => Promise.resolve(new TextEncoder().encode(serializeVideoFrames()).buffer),
     frames: SIMULATED_VIDEO_FRAMES,
   },
 ];

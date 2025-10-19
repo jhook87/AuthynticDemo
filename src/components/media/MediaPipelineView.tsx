@@ -25,8 +25,9 @@ export const MediaPipelineView = () => {
   const algorithmList = useMemo(() => [...HASH_ALGORITHMS] as HashAlgorithm[], []);
 
   useEffect(() => {
+    let disposed = false;
     const bootstrap = async () => {
-      if (assets.length) return;
+      if (assets.length || disposed) return;
       const created = await Promise.all(
         SAMPLE_MEDIA.map(async (entry) => {
           try {
@@ -41,11 +42,12 @@ export const MediaPipelineView = () => {
         }),
       );
       const assetsOnly = created.map((item) => item.asset);
-      if (!assetsOnly.length) {
+      if (!assetsOnly.length || disposed) {
         return;
       }
       const comparable = assetsOnly.map((asset) => ({ ...asset }));
       upsertMediaAssets(assetsOnly.map((asset) => computeSimilarity(asset, comparable)));
+      if (disposed) return;
       setDefinitions(new Map(created.map((item) => [item.asset.id, item.definition])));
       setSelected(assetsOnly[0]?.id);
       setWatermark(applyWatermark(assetsOnly[0]));
@@ -57,20 +59,27 @@ export const MediaPipelineView = () => {
         (acc, value) => ({ ...acc, [value.algorithm]: value.digest }),
         {} as Record<HashAlgorithm, string>,
       );
-      setHashes(digestMap);
+      if (!disposed) {
+        setHashes(digestMap);
+      }
     };
     bootstrap();
+    return () => {
+      disposed = true;
+    };
   }, [assets, algorithmList]);
 
   useEffect(() => {
     const current = assets.find((asset) => asset.id === selected);
     if (!current) return;
+    let disposed = false;
     const update = async () => {
       const digestList = await computeMultipleHashes(current.hash, algorithmList);
       const digestMap = digestList.reduce(
         (acc, value) => ({ ...acc, [value.algorithm]: value.digest }),
         {} as Record<HashAlgorithm, string>,
       );
+      if (disposed) return;
       setHashes(digestMap);
       setWatermark(applyWatermark(current));
       setTimestampRecord(anchorContent(current.id));
@@ -78,6 +87,9 @@ export const MediaPipelineView = () => {
       setModeration(moderateAsset(current));
     };
     update();
+    return () => {
+      disposed = true;
+    };
   }, [selected, assets, algorithmList]);
 
   const selectedAsset = assets.find((asset) => asset.id === selected);
