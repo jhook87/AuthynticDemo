@@ -127,6 +127,49 @@ export interface AlertEvent {
   acknowledged: boolean;
 }
 
+export interface RegistrationRecord {
+  id: string;
+  name: string;
+  organization: string;
+  registeredAt: number;
+  role: string;
+}
+
+export interface ActivityRecord {
+  id: string;
+  summary: string;
+  occurredAt: number;
+  channel: 'system' | 'security' | 'comms' | 'admin';
+}
+
+export interface UserSummary {
+  total: number;
+  active: number;
+  admin: number;
+  suspended: number;
+  biometricEnabled: number;
+}
+
+export type ScenarioImpact = 'info' | 'success' | 'warning' | 'critical';
+
+export interface ScriptedScenario {
+  id: string;
+  title: string;
+  description: string;
+  status: 'pending' | 'running' | 'completed';
+  icon: string;
+  lastUpdated?: number;
+}
+
+export interface ScenarioMoment {
+  id: string;
+  scenarioId: string;
+  headline: string;
+  details: string;
+  impact: ScenarioImpact;
+  occurredAt: number;
+}
+
 export interface AuditLogEntry {
   id: string;
   actor: string;
@@ -228,6 +271,11 @@ export interface OperatorState {
   mediaAssets: MediaAsset[];
   trustMetrics: TrustMetric[];
   alerts: AlertEvent[];
+  userSummary: UserSummary;
+  registrations: RegistrationRecord[];
+  activityFeed: ActivityRecord[];
+  scenarios: ScriptedScenario[];
+  scenarioMoments: ScenarioMoment[];
   auditLog: AuditLogEntry[];
   tasks: OperatorTask[];
   training: TrainingScenario[];
