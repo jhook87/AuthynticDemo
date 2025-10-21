@@ -1,29 +1,18 @@
 import { MetricCard } from '../shared/MetricCard';
 import { useOperatorStore } from '../../store';
-import { formatRelativeTime } from '../../utils/formatters';
 import { AUTHENTICITY_THRESHOLDS } from '../../constants';
-
-const scenarioIcon: Record<string, string> = {
-  users: '👥',
-  shield: '🛡️',
-  fingerprint: '🔐',
-  alert: '⚠️',
-};
+import { ScenarioPlayer } from '../scenario/ScenarioPlayer';
+import { MetricsVisualizer } from '../scenario/MetricsVisualizer';
+import { NetworkSimulator } from '../scenario/NetworkSimulator';
+import { ActivityMonitor } from '../scenario/ActivityMonitor';
 
 export const OperatorDashboard = () => {
-  const { consensus, trustMetrics, systemHealth, userSummary, registrations, activityFeed, scenarios, scenarioMoments } =
-    useOperatorStore((state) => ({
-      consensus: state.consensus,
-      trustMetrics: state.trustMetrics.slice(0, 3),
-      systemHealth: state.systemHealth,
-      userSummary: state.userSummary,
-      registrations: state.registrations,
-      activityFeed: state.activityFeed,
-      scenarios: state.scenarios,
-      scenarioMoments: state.scenarioMoments,
-    }));
-
-  const activeScenario = scenarios.find((scenario) => scenario.status === 'running');
+  const { consensus, trustMetrics, systemHealth, userSummary } = useOperatorStore((state) => ({
+    consensus: state.consensus,
+    trustMetrics: state.trustMetrics.slice(0, 3),
+    systemHealth: state.systemHealth,
+    userSummary: state.userSummary,
+  }));
 
   return (
     <section className="strategic-dashboard">
@@ -63,95 +52,12 @@ export const OperatorDashboard = () => {
         />
       </div>
 
-      <section className="panel scenario-panel">
-        <div className="panel-header">
-          <div>
-            <h3>Simulation timeline</h3>
-            <p>Four looping scenarios animate the account lifecycle and highlight demo-only automation beats.</p>
-          </div>
-          <div className="scenario-statuses">
-            {scenarios.map((scenario) => (
-              <span key={scenario.id} className={`scenario-pill scenario-${scenario.status}`}>
-                <span className="scenario-icon">{scenarioIcon[scenario.icon] ?? '●'}</span>
-                {scenario.title}
-              </span>
-            ))}
-          </div>
-        </div>
-        <div className="scenario-feed">
-          {scenarioMoments.length === 0 ? (
-            <p className="scenario-placeholder">Simulation warming up… scripted updates will appear here momentarily.</p>
-          ) : (
-            <ul>
-              {scenarioMoments.map((moment) => (
-                <li key={moment.id} className={`scenario-event scenario-${moment.impact}`}>
-                  <header>
-                    <span>{formatRelativeTime(moment.occurredAt)}</span>
-                    <strong>{scenarios.find((scenario) => scenario.id === moment.scenarioId)?.title ?? 'Scenario'}</strong>
-                  </header>
-                  <h4>{moment.headline}</h4>
-                  <p>{moment.details}</p>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-        <footer className="scenario-footer">
-          <span>Active scenario:</span>
-          <strong>{activeScenario ? activeScenario.title : 'Waiting for next run'}</strong>
-          <span>Scenarios loop for show-and-tell only.</span>
-        </footer>
-      </section>
+      <ScenarioPlayer />
 
-      <div className="panel-grid">
-        <section className="panel">
-          <div className="panel-header">
-            <div>
-              <h3>Recent registrations</h3>
-              <p>Latest accounts created in the platform.</p>
-            </div>
-          </div>
-          <ul className="registration-list">
-            {registrations.length === 0 ? (
-              <li className="empty">No recent users</li>
-            ) : (
-              registrations.map((record) => (
-                <li key={record.id}>
-                  <div>
-                    <strong>{record.name}</strong>
-                    <span>{record.role}</span>
-                  </div>
-                  <div>
-                    <span>{record.organization}</span>
-                    <small>{formatRelativeTime(record.registeredAt)}</small>
-                  </div>
-                </li>
-              ))
-            )}
-          </ul>
-        </section>
-        <section className="panel">
-          <div className="panel-header">
-            <div>
-              <h3>Recently active</h3>
-              <p>Latest automation events across the control plane.</p>
-            </div>
-          </div>
-          <ul className="activity-list">
-            {activityFeed.length === 0 ? (
-              <li className="empty">No recent activity</li>
-            ) : (
-              activityFeed.map((item) => (
-                <li key={item.id}>
-                  <div>
-                    <strong>{item.summary}</strong>
-                  </div>
-                  <small>{formatRelativeTime(item.occurredAt)}</small>
-                </li>
-              ))
-            )}
-          </ul>
-        </section>
+      <div className="scenario-visualization-grid">
+        <NetworkSimulator />
+        <MetricsVisualizer />
+        <ActivityMonitor />
       </div>
 
       <section className="panel trust-health">

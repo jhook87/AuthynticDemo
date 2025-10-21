@@ -10,8 +10,12 @@ import {
   pushRegistration,
   pushActivity,
   updateUserSummary,
-  setScenarioStatus,
   pushScenarioMoment,
+  updateScenarioElapsed,
+  markScenarioEventDispatched,
+  reachScenarioCheckpoint,
+  setScenarioHighlight,
+  completeScenarioRun,
 } from '../store';
 import { simulateLatencyShift, simulateStatusChanges, simulatePartition, recoverPartition } from '../services/network/networkSimulationService';
 import { simulateConsensus } from '../services/network/consensusService';
@@ -19,7 +23,7 @@ import { adjustReputation } from '../services/network/reputationService';
 import { buildTrustMetrics, buildPerformanceBenchmarks } from '../services/api/reportingService';
 import { generateIncidents } from '../services/api/incidentService';
 import { randomId } from '../utils/random';
-import { SCENARIO_SCRIPTS, scenarioEventId } from '../constants/scenarios';
+import { getScenarioDefinition, scenarioEventId } from '../constants/scenarios';
 
 const isDocumentVisible = () =>
   typeof document === 'undefined' || document.visibilityState !== 'hidden';
@@ -95,81 +99,123 @@ export const useRealtimeSimulation = (enabled = true) => {
       }, 7_000);
     }, 15_000);
 
-    const scenarioTimers: number[] = [];
-    let totalDelay = 0;
+    let rafId = 0;
+    let lastTick = 0;
 
-    SCENARIO_SCRIPTS.forEach((script) => {
-      const scenarioStartDelay = totalDelay + script.delayMs;
-      scenarioTimers.push(
-        window.setTimeout(() => {
-          setScenarioStatus(script.id, 'running');
-        }, scenarioStartDelay),
-      );
+    const processScenarioEvents = (scenarioId: string, elapsedMs: number) => {
+      const definition = getScenarioDefinition(scenarioId);
+      if (!definition) {
+        return;
+      }
 
-      let eventCursor = scenarioStartDelay;
-      script.events.forEach(({ delayMs, payload }) => {
-        eventCursor += delayMs;
-        scenarioTimers.push(
-          window.setTimeout(() => {
-            const occurredAt = Date.now();
-            pushScenarioMoment({
-              id: scenarioEventId(),
-              scenarioId: script.id,
-              headline: payload.headline,
-              details: payload.details,
-              impact: payload.impact,
+      definition.events.forEach((event) => {
+        if (elapsedMs < event.timing.delayMs) {
+          return;
+        }
+
+        const { dispatchedEvents } = operatorStore.getState().scenarioPlayer;
+        if (dispatchedEvents.includes(event.id)) {
+          return;
+        }
+
+        markScenarioEventDispatched(event.id);
+        const occurredAt = Date.now();
+        const momentId = scenarioEventId();
+
+        pushScenarioMoment({
+          id: momentId,
+          scenarioId,
+          headline: event.payload.headline,
+          details: event.payload.details,
+          impact: event.payload.impact,
+          occurredAt,
+        });
+
+        setScenarioHighlight(momentId);
+
+        if (event.type === 'registration') {
+          pushRegistration({
+            id: randomId('registration'),
+            name: event.payload.name,
+            organization: event.payload.organization,
+            role: event.payload.role,
+            registeredAt: occurredAt,
+          });
+          if (event.payload.delta) {
+            applyImpactToSummary(event.payload.delta);
+          }
+          pushActivity({
+            id: randomId('activity'),
+            summary: event.payload.activity,
+            occurredAt,
+            channel: 'admin',
+          });
+        }
+
+        if (event.type === 'activity') {
+          pushActivity({
+            id: randomId('activity'),
+            summary: event.payload.summary,
+            occurredAt,
+            channel: event.payload.channel,
+          });
+        }
+
+        if (event.type === 'metrics') {
+          applyImpactToSummary(event.payload.delta);
+          if (event.payload.activity) {
+            pushActivity({
+              id: randomId('activity'),
+              summary: event.payload.activity.summary,
               occurredAt,
+              channel: event.payload.activity.channel,
             });
-
-            if (payload.type === 'registration') {
-              pushRegistration({
-                id: randomId('registration'),
-                name: payload.name,
-                organization: payload.organization,
-                role: payload.role,
-                registeredAt: occurredAt,
-              });
-              applyImpactToSummary(payload.delta ?? {});
-              pushActivity({
-                id: randomId('activity'),
-                summary: payload.activity,
-                occurredAt,
-                channel: 'admin',
-              });
-            }
-
-            if (payload.type === 'activity') {
-              pushActivity({
-                id: randomId('activity'),
-                summary: payload.summary,
-                occurredAt,
-                channel: payload.channel,
-              });
-            }
-
-            if (payload.type === 'metrics') {
-              applyImpactToSummary(payload.delta);
-              if (payload.activity) {
-                pushActivity({
-                  id: randomId('activity'),
-                  summary: payload.activity.summary,
-                  occurredAt,
-                  channel: payload.activity.channel,
-                });
-              }
-            }
-          }, eventCursor),
-        );
+          }
+        }
       });
 
-      const completionDelay = eventCursor + 1_000;
-      scenarioTimers.push(
-        window.setTimeout(() => {
-          setScenarioStatus(script.id, 'completed');
-        }, completionDelay),
-      );
+      definition.checkpoints.forEach((checkpoint) => {
+        if (elapsedMs >= checkpoint.offsetMs) {
+          reachScenarioCheckpoint(scenarioId, checkpoint.id);
+        }
+      });
 
-      totalDelay = completionDelay + 4_000;
+      if (elapsedMs >= definition.durationMs) {
+        completeScenarioRun(scenarioId);
+      }
+    };
+
+    const tick = (timestamp: number) => {
+      if (!isDocumentVisible()) {
+        lastTick = timestamp;
+        rafId = window.requestAnimationFrame(tick);
+        return;
+      }
+
+      const { scenarioPlayer } = operatorStore.getState();
+      if (scenarioPlayer.status === 'running' && scenarioPlayer.activeScenarioId) {
+        if (!lastTick) {
+          lastTick = timestamp;
+        }
+        const delta = (timestamp - lastTick) * (scenarioPlayer.speed || 1);
+        const nextElapsed = scenarioPlayer.elapsedMs + delta;
+        const definition = getScenarioDefinition(scenarioPlayer.activeScenarioId);
+        const duration = definition?.durationMs ?? scenarioPlayer.durationMs;
+        const clampedElapsed = Math.min(nextElapsed, duration);
+        if (clampedElapsed !== scenarioPlayer.elapsedMs) {
+          updateScenarioElapsed(clampedElapsed);
+          processScenarioEvents(scenarioPlayer.activeScenarioId, clampedElapsed);
+        }
+        lastTick = timestamp;
+      } else {
+        lastTick = timestamp;
+      }
+      rafId = window.requestAnimationFrame(tick);
+    };
+
+    rafId = window.requestAnimationFrame((time) => {
+      lastTick = time;
+      tick(time);
     });
 
     return () => {
@@ -178,7 +224,7 @@ export const useRealtimeSimulation = (enabled = true) => {
       window.clearInterval(trustInterval);
       window.clearInterval(incidentInterval);
       window.clearTimeout(partitionTimeout);
-      scenarioTimers.forEach((timer) => window.clearTimeout(timer));
+      window.cancelAnimationFrame(rafId);
     };
   }, [enabled]);
 };

@@ -12,6 +12,7 @@ import type {
   RegistrationRecord,
   ScenarioMoment,
   ScriptedScenario,
+  ScenarioPlayerState,
   SystemHealthMetric,
   TrustMetric,
   UserSummary,
@@ -24,6 +25,7 @@ import { buildTrustMetrics, buildPerformanceBenchmarks } from '../services/api/r
 import { buildAuditTrail } from '../services/storage/auditLogService';
 import { minutesAgo, hoursFromNow } from '../utils/time';
 import { randomId } from '../utils/random';
+import { SCENARIO_LIBRARY } from '../constants/scenarios';
 
 const initialNodes = bootstrapNetwork();
 
@@ -35,36 +37,60 @@ const buildInitialUserSummary = (): UserSummary => ({
   biometricEnabled: 42,
 });
 
-const initialScenarios: ScriptedScenario[] = [
-  {
-    id: 'onboarding-surge',
-    title: 'Onboarding Surge',
-    description: 'Coordinated rollout of new operator credentials.',
-    status: 'pending',
+const scenarioMeta: Record<string, { icon: string; description: string }> = {
+  'onboarding-surge': {
     icon: 'users',
+    description: 'Coordinated rollout of new operator credentials.',
   },
-  {
-    id: 'role-hardening',
-    title: 'Role Hardening',
-    description: 'Privilege updates for admin cohort.',
-    status: 'pending',
+  'role-hardening': {
     icon: 'shield',
+    description: 'Privilege updates for admin cohort.',
   },
-  {
-    id: 'biometric-pilot',
-    title: 'Biometric Pilot',
-    description: 'FIDO2 activation and attestation checks.',
-    status: 'pending',
+  'biometric-pilot': {
     icon: 'fingerprint',
+    description: 'FIDO2 activation and attestation checks.',
   },
-  {
-    id: 'suspension-review',
-    title: 'Suspension Review',
-    description: 'Trust team sweeps inactive or risky accounts.',
-    status: 'pending',
+  'suspension-review': {
     icon: 'alert',
+    description: 'Trust team sweeps inactive or risky accounts.',
   },
-];
+  'threat-detection': {
+    icon: 'radar',
+    description: 'Simulated detection of coordinated authenticity attacks.',
+  },
+  'network-partition-recovery': {
+    icon: 'network',
+    description: 'Automated recovery after a synthetic partition.',
+  },
+  'multi-factor-auth-flow': {
+    icon: 'lock',
+    description: 'Adaptive multi-factor authentication walkthrough.',
+  },
+  'trust-score-evolution': {
+    icon: 'pulse',
+    description: 'Trust scoring projections under shifting signals.',
+  },
+};
+
+const initialScenarios: ScriptedScenario[] = SCENARIO_LIBRARY.map((scenario) => ({
+  id: scenario.id,
+  title: scenario.name,
+  description: scenarioMeta[scenario.id]?.description ?? scenario.expectedOutcomes[0],
+  status: 'pending',
+  icon: scenarioMeta[scenario.id]?.icon ?? 'pulse',
+}));
+
+const initialScenarioPlayer: ScenarioPlayerState = {
+  activeScenarioId: undefined,
+  status: 'idle',
+  speed: 1,
+  elapsedMs: 0,
+  durationMs: 0,
+  checkpoints: [],
+  highlightedEventId: undefined,
+  scrubberMs: 0,
+  dispatchedEvents: [],
+};
 
 const initialState: OperatorState = {
   loading: true,
@@ -80,6 +106,7 @@ const initialState: OperatorState = {
   activityFeed: [],
   scenarios: initialScenarios,
   scenarioMoments: [],
+  scenarioPlayer: initialScenarioPlayer,
   auditLog: buildAuditTrail(),
   tasks: [
     {
@@ -215,6 +242,14 @@ export const pushAlert = (alert: AlertEvent) => {
   store.setState(({ alerts }) => ({ alerts: [alert, ...alerts].slice(0, 10) }));
 };
 
+export const acknowledgeAlert = (alertId: string) => {
+  store.setState(({ alerts }) => ({
+    alerts: alerts.map((alert) =>
+      alert.id === alertId ? { ...alert, acknowledged: true } : alert,
+    ),
+  }));
+};
+
 export const updateUserSummary = (updater: (summary: UserSummary) => UserSummary) => {
   store.setState(({ userSummary }) => ({ userSummary: updater(userSummary) }));
 };
@@ -235,6 +270,142 @@ export const setScenarioStatus = (scenarioId: string, status: ScriptedScenario['
   }));
 };
 
+export const startScenario = (scenarioId: string) => {
+  const definition = SCENARIO_LIBRARY.find((scenario) => scenario.id === scenarioId);
+  if (!definition) {
+    return;
+  }
+
+  store.setState(({ scenarios, scenarioPlayer }) => ({
+    scenarios: scenarios.map((scenario) =>
+      scenario.id === scenarioId
+        ? { ...scenario, status: 'running', lastUpdated: Date.now() }
+        : scenario.status === 'running'
+        ? { ...scenario, status: 'pending' }
+        : scenario,
+    ),
+    scenarioPlayer: {
+      ...scenarioPlayer,
+      activeScenarioId: scenarioId,
+      status: 'running',
+      speed: scenarioPlayer.speed || 1,
+      elapsedMs: 0,
+      durationMs: definition.durationMs,
+      checkpoints: definition.checkpoints.map((checkpoint) => ({
+        ...checkpoint,
+        reached: false,
+        reachedAt: undefined,
+      })),
+      highlightedEventId: undefined,
+      scrubberMs: 0,
+      dispatchedEvents: [],
+    },
+  }));
+};
+
+export const pauseScenario = () => {
+  store.setState(({ scenarioPlayer }) => ({
+    scenarioPlayer: !scenarioPlayer.activeScenarioId
+      ? scenarioPlayer
+      : { ...scenarioPlayer, status: 'paused' },
+  }));
+};
+
+export const resumeScenario = () => {
+  store.setState(({ scenarioPlayer }) => ({
+    scenarioPlayer:
+      scenarioPlayer.activeScenarioId && scenarioPlayer.status !== 'running'
+        ? { ...scenarioPlayer, status: 'running' }
+        : scenarioPlayer,
+  }));
+};
+
+export const resetScenarioPlayer = () => {
+  store.setState(({ scenarios }) => ({
+    scenarios: scenarios.map((scenario) => ({ ...scenario, status: 'pending' })),
+    scenarioPlayer: { ...initialScenarioPlayer },
+  }));
+};
+
+export const setScenarioSpeed = (speed: number) => {
+  const clamped = Math.min(4, Math.max(0.5, Number.isFinite(speed) ? speed : 1));
+  store.setState(({ scenarioPlayer }) => ({
+    scenarioPlayer: { ...scenarioPlayer, speed: clamped },
+  }));
+};
+
+export const updateScenarioElapsed = (elapsedMs: number) => {
+  store.setState(({ scenarioPlayer }) => {
+    const bounded = Math.min(Math.max(elapsedMs, 0), scenarioPlayer.durationMs || elapsedMs);
+    const shouldSyncScrubber = Math.abs(scenarioPlayer.scrubberMs - scenarioPlayer.elapsedMs) < 80;
+    return {
+      scenarioPlayer: {
+        ...scenarioPlayer,
+        elapsedMs: bounded,
+        scrubberMs: shouldSyncScrubber ? bounded : scenarioPlayer.scrubberMs,
+      },
+    };
+  });
+};
+
+export const setScenarioScrubber = (scrubberMs: number) => {
+  store.setState(({ scenarioPlayer }) => ({
+    scenarioPlayer: {
+      ...scenarioPlayer,
+      scrubberMs: Math.min(Math.max(scrubberMs, 0), scenarioPlayer.durationMs || scrubberMs),
+    },
+  }));
+};
+
+export const markScenarioEventDispatched = (eventId: string) => {
+  store.setState(({ scenarioPlayer }) => ({
+    scenarioPlayer: scenarioPlayer.dispatchedEvents.includes(eventId)
+      ? scenarioPlayer
+      : { ...scenarioPlayer, dispatchedEvents: [...scenarioPlayer.dispatchedEvents, eventId] },
+  }));
+};
+
+export const reachScenarioCheckpoint = (scenarioId: string, checkpointId: string) => {
+  store.setState(({ scenarioPlayer }) => ({
+    scenarioPlayer:
+      scenarioPlayer.activeScenarioId !== scenarioId
+        ? scenarioPlayer
+        : {
+            ...scenarioPlayer,
+            checkpoints: scenarioPlayer.checkpoints.map((checkpoint) =>
+              checkpoint.id === checkpointId && !checkpoint.reached
+                ? { ...checkpoint, reached: true, reachedAt: Date.now() }
+                : checkpoint,
+            ),
+          },
+  }));
+};
+
+export const setScenarioHighlight = (momentId?: string) => {
+  store.setState(({ scenarioPlayer }) => ({
+    scenarioPlayer: { ...scenarioPlayer, highlightedEventId: momentId },
+  }));
+};
+
+export const completeScenarioRun = (scenarioId: string) => {
+  store.setState(({ scenarios, scenarioPlayer }) => ({
+    scenarios: scenarios.map((scenario) =>
+      scenario.id === scenarioId
+        ? { ...scenario, status: 'completed', lastUpdated: Date.now() }
+        : scenario,
+    ),
+    scenarioPlayer:
+      scenarioPlayer.activeScenarioId === scenarioId
+        ? {
+            ...scenarioPlayer,
+            status: 'completed',
+            elapsedMs: scenarioPlayer.durationMs,
+            scrubberMs: scenarioPlayer.durationMs,
+          }
+        : scenarioPlayer,
+  }));
+};
+
 export const pushScenarioMoment = (moment: ScenarioMoment) => {
   store.setState(({ scenarioMoments }) => ({
     scenarioMoments: [moment, ...scenarioMoments].slice(0, 12),
@@ -248,6 +419,7 @@ export const resetScenarios = () => {
     registrations: [],
     activityFeed: [],
     userSummary: buildInitialUserSummary(),
+    scenarioPlayer: { ...initialScenarioPlayer },
   });
 };
 

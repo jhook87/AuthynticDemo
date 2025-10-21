@@ -170,6 +170,89 @@ export interface ScenarioMoment {
   occurredAt: number;
 }
 
+export type ScenarioEventType = 'registration' | 'activity' | 'metrics';
+
+export interface ScenarioEventTiming {
+  delayMs: number;
+  duration: number;
+}
+
+export type ScenarioEvent =
+  | {
+      id: string;
+      type: 'registration';
+      payload: {
+        impact: ScenarioImpact;
+        headline: string;
+        details: string;
+        name: string;
+        organization: string;
+        role: string;
+        activity: string;
+        delta?: { total?: number; active?: number; admin?: number; suspended?: number; biometricEnabled?: number };
+      };
+      timing: ScenarioEventTiming;
+    }
+  | {
+      id: string;
+      type: 'activity';
+      payload: {
+        impact: ScenarioImpact;
+        headline: string;
+        details: string;
+        summary: string;
+        channel: 'system' | 'security' | 'comms' | 'admin';
+      };
+      timing: ScenarioEventTiming;
+    }
+  | {
+      id: string;
+      type: 'metrics';
+      payload: {
+        impact: ScenarioImpact;
+        headline: string;
+        details: string;
+        delta: { total?: number; active?: number; admin?: number; suspended?: number; biometricEnabled?: number };
+        activity?: { summary: string; channel: 'system' | 'security' | 'comms' | 'admin' };
+      };
+      timing: ScenarioEventTiming;
+    };
+
+export interface ScenarioCheckpoint {
+  id: string;
+  label: string;
+  description: string;
+  offsetMs: number;
+}
+
+export interface ScenarioDefinition {
+  id: string;
+  name: string;
+  durationMs: number;
+  complexity: 'Intro' | 'Moderate' | 'Advanced';
+  expectedOutcomes: string[];
+  preview: string;
+  events: ScenarioEvent[];
+  checkpoints: ScenarioCheckpoint[];
+}
+
+export interface ScenarioCheckpointState extends ScenarioCheckpoint {
+  reached: boolean;
+  reachedAt?: number;
+}
+
+export interface ScenarioPlayerState {
+  activeScenarioId?: string;
+  status: 'idle' | 'running' | 'paused' | 'completed';
+  speed: number;
+  elapsedMs: number;
+  durationMs: number;
+  checkpoints: ScenarioCheckpointState[];
+  highlightedEventId?: string;
+  scrubberMs: number;
+  dispatchedEvents: string[];
+}
+
 export interface AuditLogEntry {
   id: string;
   actor: string;
@@ -276,6 +359,7 @@ export interface OperatorState {
   activityFeed: ActivityRecord[];
   scenarios: ScriptedScenario[];
   scenarioMoments: ScenarioMoment[];
+  scenarioPlayer: ScenarioPlayerState;
   auditLog: AuditLogEntry[];
   tasks: OperatorTask[];
   training: TrainingScenario[];
