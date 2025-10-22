@@ -22,5 +22,5 @@
 
 ## 5. Testing via Node Test Runner
 - **Context**: External testing frameworks unavailable.
-- **Decision**: Emitted TypeScript to ESM (`npm run build:lib`) and executed assertions with `node --test` + coverage.
+- **Decision**: Emitted TypeScript to ESM (`npm run build:packages`) and executed assertions with `node --test` + coverage.
 - **Consequences**: Fast feedback loop using standard library tooling; tests validate cryptographic and network logic directly against compiled modules.
