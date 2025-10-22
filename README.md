@@ -41,10 +41,12 @@ npm test
 | Command | Description |
 | --- | --- |
 | `npm run dev` | Start Vite in development mode. |
-| `npm run build:lib` | Type-check and emit ESM modules to `build/` for testing. |
-| `npm run build` | Compile TypeScript and bundle production assets. |
+| `npm run build:packages` | Compile the reusable workspaces under `packages/`. |
+| `npm run build:lib` | Emit Node-consumable modules into `build/` for tests. |
+| `npm run build` | Build workspaces and bundle production assets with Vite. |
 | `npm run preview` | Preview the production build locally. |
-| `npm test` | Build the library output and execute Node tests with coverage. |
+| `npm test` | Build packages and execute Node tests with coverage. |
+| `npm run lint` | Lint the app and workspace sources with ESLint. |
 
 ## Architecture Overview
 
@@ -69,7 +71,22 @@ src/
 ├── types/                 // Shared domain models & ambient typings
 ├── utils/                 // Helpers (formatting, randomness, BLAKE2b)
 └── tests/                 // Node tests (built outputs in `build/`)
+packages/
+├── demo-core/            // Scenario engine, metrics, and simulators
+├── demo-ui/              // Defense-grade visualization components
+└── demo-scenarios/       // Pre-configured mission scenarios
+infrastructure/
+├── docker/               // Container images for the expo platform
+├── kubernetes/           // Deployment manifests matching production
+└── terraform/            // Infrastructure-as-code environment scaffolding
 ```
+
+### Monorepo Packages
+
+- `@authyntic/demo-core` – Provides the scenario engine, metrics collector, and network simulator powering demonstrations.
+- `@authyntic/demo-ui` – Defense-oriented visualization components built atop three.js and d3.
+- `@authyntic/demo-scenarios` – Pre-configured operational scenarios aligned to expo narratives.
+
 
 Key technical decisions:
 

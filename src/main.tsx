@@ -1,16 +1,16 @@
 import React from 'react';
-import ReactDOM from 'react-dom/client';
+import ReactDOM from 'react-dom';
 import App from './App';
 import './styles/main.css';
 
-// Mount the main application into the DOM
 const container = document.getElementById('root');
+
 if (container) {
-  const root = ReactDOM.createRoot(container);
-  root.render(
+  ReactDOM.render(
     <React.StrictMode>
       <App />
-    </React.StrictMode>
+    </React.StrictMode>,
+    container
   );
 }
 

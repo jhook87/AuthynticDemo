@@ -1,0 +1,17 @@
+{
+  "name": "@authyntic/demo-scenarios",
+  "version": "0.1.0",
+  "description": "Scenario definitions for Authyntic defense demonstrations",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@authyntic/demo-core": "^0.1.0"
+  }
+}
